@@ -1,0 +1,16 @@
+version: 1
+project:
+  title: arXiv Project — Nhóm <số nhóm>
+  subtitle: Intro to Data Science (CSC14xxx) — Milestone 1 và 2
+  authors:
+    - name: Nguyễn Lưu Hương
+    # - name: Thành viên 2
+  github: https://github.com/<tài-khoản>/intro2DS        # repo CODE của nhóm
+  toc:
+    - file: index.md
+    - file: crawling.md
+    # Milestone 2: thêm dòng dưới đây khi viết (không đổi URL gốc)
+    # - file: parsing.md
+site:
+  template: book-theme
+  title: arXiv Project — Nhóm <số nhóm>

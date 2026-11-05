@@ -26,7 +26,7 @@ Repo sách là repo **riêng**, tách khỏi repo code.
 │   ├── discovery_oai.md      OAI-PMH (D1)           — Linh
 │   ├── discovery_kaggle.md   Kaggle (D2)            — Châu
 │   ├── download.md           tải nguồn + HTTP       — Hương
-│   ├── extract_storage.md    trích .tex/.bib, lưu   — Hương
+│   ├── extract_storage.md    trích .tex/.bib, lưu   — Linh
 │   ├── references.md         Semantic Scholar       — Châu
 │   ├── statistics.md         thống kê               — Hiền
 │   ├── performance.md        thời gian, RAM, đĩa    — Hiền

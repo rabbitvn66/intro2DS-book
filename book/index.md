@@ -8,7 +8,7 @@ Báo cáo Jupyter Book cho đồ án môn học **Nhập môn Khoa học Dữ li
 
 | Milestone | Nội dung chính | Trạng thái |
 |:--|:--|:--|
-| [](#m1-crawling) | **Milestone 1 — Data Crawling**: Giải quyết danh sách ID, tải toàn bộ mã nguồn $\LaTeX$ cho mọi phiên bản, thu thập dữ liệu trích dẫn có cấu trúc. | Đã hoàn thành |
+| [Milestone 1](#m1-01-overview) | **Milestone 1 — Data Crawling**: Giải quyết danh sách ID, tải toàn bộ mã nguồn $\LaTeX$ cho mọi phiên bản, thu thập dữ liệu trích dẫn có cấu trúc. | Đã hoàn thành |
 | Milestone 2 | **Milestone 2 — Data Parsing**: Phân tích cây cấu trúc tài liệu $\LaTeX$, chuẩn hoá nội dung và khử trùng lặp dữ liệu. | Sắp tới |
 | Milestone 3 | **Milestone 3 — Machine Learning & Dataset**: Huấn luyện mô hình đối sánh trích dẫn và công bố tập dữ liệu chuẩn trên Hugging Face. | Sắp tới |
 

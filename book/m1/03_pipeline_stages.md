@@ -19,40 +19,22 @@ Quy trình thu thập dữ liệu (crawling pipeline) được xây dựng theo 
 
 ## 3.1. Discovery (Khám phá siêu dữ liệu)
 
-Giai đoạn Khám phá (Discovery) có nhiệm vụ chuyển đổi danh sách các mã định danh arXiv thô (dạng base ID như `2507.01659`) thành siêu dữ liệu đầy đủ của bài báo, đặc biệt là xác định toàn bộ các phiên bản khả dụng ($v1, v2, \dots, vN$) để phục vụ cho các bước tải mã nguồn tiếp theo.
+Giai đoạn Discovery có nhiệm vụ thu thập thông tin mô tả của các bài báo khoa học từ arXiv, tạo cơ sở cho các công đoạn xử lý tiếp theo. Đầu vào của giai đoạn này là danh sách mã định danh arXiv (arxiv_id) không chứa hậu tố phiên bản, được đọc từ tệp cấu hình ids_file. Thông qua arXiv API, hệ thống xác định các thông tin như tiêu đề, tác giả, ngày nộp, thông tin xuất bản và đặc biệt là số lượng phiên bản của từng bài báo.
+Hệ thống gửi yêu cầu tới arXiv API theo từng batch. Danh sách ID đầu vào được chia thành các nhóm có kích thước xác định bởi discovery_batch_size. Quy trình thực hiện gồm các bước:
+1. Đọc danh sách arXiv ID và chia thành các batch.
+2. Kiểm tra dữ liệu đã tồn tại để bỏ qua những bài báo có metadata hoàn chỉnh.
+3. Gửi truy vấn arXiv API cho các ID cần thu thập trong batch.
+4. Ánh xạ kết quả trả về với đúng arXiv ID, không phụ thuộc vào thứ tự phản hồi.
+5. Xác định phiên bản mới nhất và xây dựng danh sách các phiên bản của từng bài.
+6. Thu thập ngày sửa đổi của các phiên bản và lưu metadata vào tệp JSON.
 
-### Phương pháp 1: arXiv API (Cấu hình Baseline B — Hương phụ trách)
-arXiv API tại địa chỉ `https://export.arxiv.org/api/query` hỗ trợ truy vấn trực tiếp bằng tham số `id_list`. Khi gửi truy vấn với một base ID (ví dụ: `2507.01659`), API trả về một mục Atom XML chứa siêu dữ liệu của phiên bản **mới nhất** (latest version).
 
-```python
-import arxiv
+Đối với mỗi bài báo, arXiv API cung cấp thông tin của phiên bản mới nhất. Từ hậu tố phiên bản vN, hệ thống xác định được tổng số phiên bản và xây dựng danh sách từ v1 đến vN. Bên cạnh đó, Discovery thu thập thời điểm nộp phiên bản đầu tiên và thời điểm sửa đổi của các phiên bản tiếp theo.
 
-client = arxiv.Client(page_size=100, delay_seconds=3.0, num_retries=3)
-search = arxiv.Search(id_list=["2507.01659"], max_results=1)
-paper = next(client.results(search))
-print(f"Title: {paper.title}")
-print(f"Latest ID: {paper.get_short_id()}")  # Trả về hậu tố phiên bản, ví dụ: '2507.01659v3'
-```
+Đối với các arXiv ID dạng mới, hệ thống có thể gom những phiên bản trung gian vào các truy vấn theo batch để lấy ngày cập nhật. Ngày cập nhật của phiên bản mới nhất được lấy trực tiếp từ kết quả Discovery ban đầu.
 
-- **Xác định danh sách phiên bản:** Mã định danh arXiv tuân theo quy ước `{base_id}v{version_number}`. Hệ thống tách hậu tố `vN` để xác định số phiên bản mới nhất là $N$, từ đó nội suy danh sách mọi phiên bản cần tải là `versions = [1, 2, ..., N]`.
-- **Thu thập ngày sửa đổi (`revised_dates`):**
-  - *Chiến lược 1 (Gộp theo lô):* Gộp danh sách các phiên bản trung gian `[f"{id}v{n}" for n in range(2, N)]` vào một yêu cầu API duy nhất để lấy mốc thời gian `entry.updated`.
-  - *Chiến lược 2 (Fallback Abs HTML):* arXiv API trả về HTTP 500 khi truy vấn các mã định danh dạng cũ (`hep-th/9901001vN`). Khi đó, hệ thống tự động fallback phân tích khối `Submission history` từ trang web tóm tắt HTML:
-    ```python
-    _HISTORY_BLOCK = re.compile(r'<div class="submission-history">(.*?)</div>', re.DOTALL)
-    _HISTORY_ENTRY = re.compile(
-        r"\[v(\d+)\].*?</strong>\s*(\w{3}, \d{1,2} \w{3} \d{4} \d{2}:\d{2}:\d{2}) UTC", re.DOTALL
-    )
-    ```
-- **Điều tốc và Xử lý lỗi:** Đối tượng `Throttle(min_interval=3.0)` ghi nhận mốc thời gian truy cập `time.monotonic()` trước và sau mỗi request để đảm bảo giãn cách tối thiểu 3 giây. Ngoại lệ được chuẩn hoá thành `HTTP_429`, `HTTP_5XX`, `TIMEOUT`, `NOT_FOUND`...
+Trong trường hợp truy vấn lịch sử phiên bản không thành công hoặc không trả về đầy đủ dữ liệu, hệ thống sử dụng cơ chế dự phòng (fallback), bao gồm truy vấn riêng từng bài báo hoặc phân tích thông tin Submission history trên trang abstract của arXiv. Nếu không thể thu thập đầy đủ ngày sửa đổi nhưng vẫn xác định được danh sách phiên bản, bài báo vẫn có thể được tiếp tục xử lý. Khi đó, revised_dates được để là null và thông tin cảnh báo được ghi vào nhật ký.
 
-### Phương pháp 2: OAI-PMH (Cấu hình D1 — Linh phụ trách)
-*(Endpoint `oaipmh.arxiv.org/oai`, verb `GetRecord`/`ListRecords`, resumption token, bổ sung tra version bằng cách nào, so với arXiv API.)*
-
-### Phương pháp 3: Kaggle Dataset Snapshot (Cấu hình D2 — Châu phụ trách)
-*(Dataset Cornell-University/arxiv, cách đọc JSONL/`kagglehub`, lọc theo ID, thiếu thông tin version thì bổ sung thế nào, snapshot cập nhật đến ngày nào.)*
-
----
 
 ## 3.2. Download (Tải mã nguồn và tầng HTTP — Hương phụ trách)
 
@@ -85,9 +67,42 @@ $$\text{https://export.arxiv.org/src/}\{arxiv\_id\}\text{v}\{version\}$$
 
 ## 3.4. References (Thu thập trích dẫn Semantic Scholar — Châu phụ trách)
 
-*(Endpoint Semantic Scholar, các field yêu cầu, lọc `externalIds.ArXiv`, giữ mọi reference cục bộ, rate limit 1 req/s, API key, xử lý lỗi 429. Lưu ý: Semantic Scholar không phân biệt reference theo từng version.)*
+Giai đoạn References sử dụng Semantic Scholar Academic Graph API để thu thập danh sách các tài liệu khoa học được một bài báo trích dẫn. Đầu vào của giai đoạn này là mã định danh arXiv của bài báo nguồn. Đầu ra là danh sách các tài liệu được bài báo đó trích dẫn, cùng những thông tin mô tả như tiêu đề, tác giả và mã định danh.
 
----
+Hệ thống gửi yêu cầu đến endpoint của Semantic Scholar Academic Graph API theo cấu trúc:
+
+https://api.semanticscholar.org/graph/v1/paper/ARXIV:{arxiv_id}/references
+
+Trong đó, {arxiv_id} là mã định danh của bài báo cần thu thập tài liệu tham khảo.
+Semantic Scholar có thể trả về nhiều tài liệu tham khảo cho một bài báo. Do đó, hệ thống sử dụng cơ chế pagination để thu thập dữ liệu qua nhiều trang. Mỗi request yêu cầu tối đa 1000 references. Sau khi nhận phản hồi, hệ thống kiểm tra trường next. Nếu next chứa offset của trang tiếp theo, hệ thống tiếp tục gửi request với offset tương ứng. Ngược lại, nếu next là null hoặc không tồn tại, quá trình thu thập kết thúc.
+Trước khi tiếp tục sang trang mới, hệ thống kiểm tra cấu trúc phản hồi, tính hợp lệ của các trường và việc offset có thực sự tăng hay không. Điều này giúp tránh xử lý dữ liệu sai cấu trúc hoặc lặp vô hạn khi API trả về thông tin phân trang không hợp lệ.
+
+Dữ liệu nhận được từ Semantic Scholar được chuyển đổi về một schema thống nhất để phục vụ lưu trữ và xử lý ở các milestone tiếp theo.
+| Trường dữ liệu | Ý nghĩa |
+|---|---|
+| `arxiv_id` | Mã arXiv của bài báo nguồn đang trích dẫn |
+| `ref_arxiv_id` | Mã arXiv của tài liệu được trích dẫn, nếu xác định được |
+| `ref_title` | Tiêu đề tài liệu được trích dẫn |
+| `ref_authors` | Danh sách tác giả của tài liệu được trích dẫn |
+| `ref_submission_date` | Ngày nộp của tài liệu được trích dẫn |
+| `ref_s2_id` | Mã Semantic Scholar của tài liệu được trích dẫn |
+
+Trong quá trình chuẩn hóa, hệ thống lấy ref_arxiv_id từ trường externalIds.ArXiv. Nếu Semantic Scholar không cung cấp mã arXiv, giá trị này được lưu là null thay vì loại bỏ toàn bộ reference. Việc giữ lại các references không có arXiv ID giúp hạn chế mất dữ liệu và tạo điều kiện sử dụng các thuộc tính khác, chẳng hạn tiêu đề, tác giả hoặc Semantic Scholar ID, cho các bước đối sánh sau này. Nếu một mục trích dẫn không có đối tượng citedPaper, hệ thống bỏ qua mục đó vì không có đủ đối tượng dữ liệu để chuẩn hóa.
+
+Đối với ref_submission_date, implementation hiện tại chưa thu thập trường này từ API nên giá trị được để là null. Đây là một giới hạn của dữ liệu References tại thời điểm triển khai.
+
+Ngoài ra, Semantic Scholar trả về danh sách tài liệu tham khảo ở mức bài báo; hệ thống hiện chưa phân biệt danh sách references riêng cho từng phiên bản v1, v2, ... của cùng một bài báo arXiv.
+
+Đối với Semantic Scholar API có thể giới hạn tần suất truy cập. Do đó, giữa các yêu cầu gửi được cách nhau tối thiểu 3 giây. Nếu gặp các lỗi HTTP có thể thử lại. Khi phản hồi có header Retry-After, hệ thống ưu tiên thời gian chờ do máy chủ cung cấp. Trong các trường hợp khác, thời gian chờ giữa những lần thử lại được tính theo exponential backoff
+
+Cấu hình pilot sử dụng:
+
+| Tham số | Giá trị | Ý nghĩa |
+|---|---:|---|
+| `pipeline_references_queue` | 4 | Số công việc tối đa trong hàng đợi References |
+| `s2_max_retries` | 3 | Số lần thử lại bổ sung tối đa |
+| `s2_backoff_base_seconds` | 5 | Thời gian cơ sở tính exponential backoff |
+
 
 ## 3.5. Storage (Tổ chức lưu trữ và mô hình dữ liệu)
 

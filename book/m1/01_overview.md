@@ -23,10 +23,10 @@ Nhóm được giao 20.000 bài báo arXiv (`configs/solo/ids_all.txt`, từ `25
 
 | Thành viên | MSSV | Dải ID được giao | Nhiệm vụ phụ trách |
 |:---|:---:|:---|:---|
-| **Trần Bảo Châu** | `24120027` | `2507.21659` – `2508.02871`<br/>(`configs/team/ids_24120027.txt`) | - Chiến lược điều phối Bounded Pipeline.<br/>- Cơ chế xử lý lỗi và đảm bảo tính nhất quán dữ liệu.<br/>- Discovery qua “Kaggle Dataset Snapshot” (phương án tham khảo, không dùng trong cấu hình chính).<br/>- Module thu thập trích dẫn qua Semantic Scholar API. |
-| **Lê Thị Thùy Linh** | `24120046` | `2507.11659` – `2507.16658`<br/>(`configs/team/ids_24120046.txt`) | - Discovery qua OAI-PMH.<br/>- Extract: giải nén, chỉ giữ `.tex`/`.bib`, loại bỏ các tệp còn lại (gồm hình ảnh).<br/>- Storage: lưu trữ và kiểm định corpus. |
+| **Lý Ngọc Châu** | `24120027` | `2507.21659` – `2508.02871`<br/>(`configs/team/ids_24120027.txt`) | - Chiến lược điều phối Bounded Pipeline.<br/>- Cơ chế xử lý lỗi và đảm bảo tính nhất quán dữ liệu.<br/>- Discovery qua “Kaggle Dataset Snapshot” (phương án tham khảo, không dùng trong cấu hình chính).<br/>- Module thu thập trích dẫn qua Semantic Scholar API. |
+| **Nguyễn Hà Minh Hiền** | `24120046` | `2507.11659` – `2507.16658`<br/>(`configs/team/ids_24120046.txt`) | - Benchmark và Metrics.<br/>- Đo tài nguyên: RAM, CPU, đĩa, thời gian chạy.<br/>- Thu thập log, tổng hợp benchmark.<br/>- Cập nhật dữ liệu thực nghiệm vào báo cáo. |
 | **Nguyễn Lưu Hương** | `24120058` | `2507.01659` – `2507.06658`<br/>(`configs/team/ids_24120058.txt`) | - Kiến trúc baseline (cấu hình `B`).<br/>- Discovery qua arXiv API.<br/>- Tải mã nguồn qua HTTP endpoint `export.arxiv.org/src/`.<br/>- Quản trị repo sách, duyệt Pull Request. |
-| **Nguyễn Thị Thu Hiền** | `24120085` | `2505.15666` – `2505.20665`<br/>(`configs/team/ids_24120085.txt`) | - Benchmark và Metrics.<br/>- Đo tài nguyên: RAM, CPU, đĩa, thời gian chạy.<br/>- Thu thập log, tổng hợp benchmark.<br/>- Cập nhật dữ liệu thực nghiệm vào báo cáo. |
+| **Lê Nguyễn Thùy Linh** | `24120085` | `2505.15666` – `2505.20665`<br/>(`configs/team/ids_24120085.txt`) | - Discovery qua OAI-PMH.<br/>- Extract: giải nén, chỉ giữ `.tex`/`.bib`, loại bỏ các tệp còn lại (gồm hình ảnh).<br/>- Storage: lưu trữ và kiểm định corpus. |
 
 ## 1.2. Công nghệ và cấu hình
 

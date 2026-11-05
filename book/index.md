@@ -17,12 +17,10 @@ Báo cáo Jupyter Book cho đồ án môn học **Nhập môn Khoa học Dữ li
 ### Thông tin Dự án và Thành viên
 - **Kho lưu trữ mã nguồn:** [https://github.com/qaztyhn/intro2DS](https://github.com/qaztyhn/intro2DS)
 - **Danh sách thành viên nhóm:**
-  - `24120058` – **Nguyễn Lưu Hương** (Trưởng nhóm: Phụ trách cấu hình Baseline B, Tầng HTTP, arXiv API, quản trị repo sách)
-  - `24120046` – **Lê Thị Thùy Linh** (Phụ trách cấu hình OAI-PMH D1, Trích xuất mã nguồn $\LaTeX$ & Kiểm định lưu trữ)
-  - `24120027` – **Trần Bảo Châu** (Phụ trách cấu hình Kaggle Snapshot D2, Thu thập trích dẫn Semantic Scholar)
-  - `24120085` – **Nguyễn Thị Thu Hiền** (Phụ trách Đo lường tài nguyên, Thống kê, Phân tích hiệu năng & Benchmark)
+  - `24120027` – **Lý Ngọc Châu**
+  - `24120046` – **Nguyễn Hà Minh Hiền**
+  - `24120058` – **Nguyễn Lưu Hương**
+  - `24120085` – **Lê Nguyễn Thuỳ Linh**
 
 ---
 
-> [!NOTE]
-> Mọi đồ thị, biểu đồ và bảng số liệu trong báo cáo này được **sinh tự động trong quá trình biên dịch sách (build time)** từ các tệp dữ liệu tóm tắt trong thư mục `data/`, đảm bảo tính khả kiểm và tính tương tác trực quan.

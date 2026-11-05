@@ -41,15 +41,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r book/requirements.txt
-          pip install jupyter-book mystmd
+          pip install jupyter-book
           python -m ipykernel install --user --name python3
 
       - name: Build Jupyter Book
         run: |
-          jupyter-book build book
+          cd book
+          jupyter book build --html --execute
+
           echo "Checking build output..."
-          ls -la book/_build/
-          test -d book/_build/html
+          ls -la _build/
+          test -d _build/html
 
       - name: Upload artifact for GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

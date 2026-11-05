@@ -11,7 +11,7 @@ kernelspec:
   display_name: Python 3
 ---
 
-:::{note} Phụ trách: Hương
+:::{note} Phụ trách: Linh
 Xoá khung này khi viết xong. Các đoạn *(in nghiêng trong ngoặc)* là gợi ý — thay bằng nội dung của bạn.
 :::
 

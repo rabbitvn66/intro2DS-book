@@ -48,11 +48,13 @@ jobs:
           pip install jupyter-book mystmd
           python -m ipykernel install --user --name python3
 
-      - name: Build Jupyter Book
+            - name: Build Jupyter Book
         run: |
-          cd book
-          # Build HTML và thực thi các code cell để sinh bảng biểu/đồ thị
-          jupyter book build --html --execute . || jupyter-book build .
+          jupyter-book build book
+
+          echo "Checking build output..."
+          ls -la book/_build/
+          test -d book/_build/html
 
       - name: Upload artifact for GitHub Pages
         if: github.ref == 'refs/heads/main'

@@ -33,7 +33,7 @@ jobs:
           pip install -r requirements.txt
           pip install jupyter-book
       - name: Build HTML
-        run: jupyter book build --html
+        run: jupyter book build --html --execute
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./_build/html

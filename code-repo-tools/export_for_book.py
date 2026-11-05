@@ -44,8 +44,9 @@ def main():
 
     for run in args.run_dirs:
         rj = read_json(run / "run.json") or {}
+        config = rj.get("config_name") or run.name.split("_")[0]  # B, D1, D2, S1 ...
         runs.append({
-            "run_id": run.name, "run_status": rj.get("run_status"),
+            "run_id": run.name, "config": config, "run_status": rj.get("run_status"),
             "cache_mode": rj.get("cache_mode"), "started_at": rj.get("started_at"),
             "finished_at": rj.get("finished_at"), "n_ids": len(rj.get("input_ids", [])),
         })
@@ -61,7 +62,7 @@ def main():
             r = read_json(pdir / "references.json") or {}
             val = read_json(pdir / "validation.json") or {}
             papers.append({
-                "run_id": run.name, "arxiv_id": aid, "title": meta.get("title"),
+                "run_id": run.name, "config": config, "arxiv_id": aid, "title": meta.get("title"),
                 "n_authors": len(meta.get("authors") or []),
                 "submission_date": meta.get("submission_date"),
                 "latest_version": meta.get("latest_version"),
@@ -71,7 +72,7 @@ def main():
             })
             for vdir in sorted((pdir / "versions").glob("v*/")):
                 m = read_json(vdir / "manifest.json") or {}
-                versions.append({"run_id": run.name, "arxiv_id": aid, **m})
+                versions.append({"run_id": run.name, "config": config, "arxiv_id": aid, **m})
             for ref in r.get("references") or []:
                 refs.append({
                     "run_id": run.name, "arxiv_id": aid,
@@ -83,11 +84,11 @@ def main():
     events.close()
 
     write_csv(args.out / "runs.csv", runs,
-              ["run_id", "run_status", "cache_mode", "started_at", "finished_at", "n_ids"])
+              ["run_id", "config", "run_status", "cache_mode", "started_at", "finished_at", "n_ids"])
     write_csv(args.out / "papers.csv", papers,
-              ["run_id", "arxiv_id", "title", "n_authors", "submission_date", "latest_version",
+              ["run_id", "config", "arxiv_id", "title", "n_authors", "submission_date", "latest_version",
                "venue", "metadata_status", "references_status", "validation_status"])
-    vfields = ["run_id", "arxiv_id", "version", "versioned_id", "download_status",
+    vfields = ["run_id", "config", "arxiv_id", "version", "versioned_id", "download_status",
                "extract_status", "source_format", "archive_bytes",
                "unpacked_total_bytes", "kept_source_bytes", "error_code"]
     write_csv(args.out / "versions.csv", versions, vfields)

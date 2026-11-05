@@ -48,7 +48,7 @@ jobs:
           pip install jupyter-book mystmd
           python -m ipykernel install --user --name python3
 
-            - name: Build Jupyter Book
+      - name: Build Jupyter Book
         run: |
           jupyter-book build book
 

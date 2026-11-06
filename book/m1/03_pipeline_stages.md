@@ -36,7 +36,7 @@ Hệ thống gửi yêu cầu tới arXiv API theo từng batch. Danh sách ID �
 Trong trường hợp truy vấn lịch sử phiên bản không thành công hoặc không trả về đầy đủ dữ liệu, hệ thống sử dụng cơ chế dự phòng (fallback), bao gồm truy vấn riêng từng bài báo. Nếu không thể thu thập đầy đủ ngày sửa đổi nhưng vẫn xác định được danh sách phiên bản, bài báo vẫn có thể được tiếp tục xử lý. Khi đó, revised_dates được để là null và thông tin cảnh báo được ghi vào nhật ký.
 
 
-## 3.2. Download (Tải mã nguồn và tầng HTTP — Hương phụ trách)
+## 3.2. Download (Tải mã nguồn và tầng HTTP)
 
 Sau khi Discovery xác định danh sách phiên bản, khâu Download tải gói mã nguồn nguyên bản của **từng phiên bản** `v1 … vN` về máy cục bộ. Mỗi phiên bản là một request riêng, các request chạy tuần tự và dùng chung một bộ điều tốc.
 

@@ -28,6 +28,8 @@ Nhóm được giao 20.000 bài báo arXiv (`configs/solo/ids_all.txt`, từ `25
 | **Nguyễn Lưu Hương** | `24120058` | `2507.01659` – `2507.06658`<br/>(`configs/team/ids_24120058.txt`) | - Kiến trúc baseline (cấu hình `B`).<br/>- Discovery qua arXiv API.<br/>- Tải mã nguồn qua HTTP endpoint `export.arxiv.org/src/`.<br/>- Quản trị repo sách, duyệt Pull Request. |
 | **Lê Nguyễn Thùy Linh** | `24120085` | `2505.15666` – `2505.20665`<br/>(`configs/team/ids_24120085.txt`) | - Discovery qua OAI-PMH.<br/>- Extract: giải nén, chỉ giữ `.tex`/`.bib`, loại bỏ các tệp còn lại (gồm hình ảnh).<br/>- Storage: lưu trữ và kiểm định corpus. |
 
+Mỗi thành viên có một tệp cấu hình chạy đầy đủ cho dải của mình (`configs/team/baseline_<MSSV>.yaml`). Cả bốn tệp đều dùng `config_name: "B"` và `run_id: "B_full_<MSSV>"`, nghĩa là corpus cuối cùng được thu thập bằng cấu hình baseline.
+
 ## 1.2. Công nghệ và cấu hình
 
 Hệ thống viết bằng Python 3.10+. Các thư viện chính được khai báo trong `requirements.txt`:
@@ -40,6 +42,7 @@ Hệ thống viết bằng Python 3.10+. Các thư viện chính được khai b
 | `psutil` | Lấy mẫu RAM và đĩa trong lúc chạy |
 | `kagglehub` | Đọc Kaggle metadata snapshot (phương án tham khảo) |
 | `pytest` | Kiểm thử offline cho các module |
+| `certifi` | Bộ chứng chỉ CA cho kết nối HTTPS (cố định phiên bản trong `requirements.txt`) |
 
 Toàn bộ thiết lập của một lần chạy nằm trong một tệp YAML (`src/config.py` kiểm tra các khóa bắt buộc). Những tham số quan trọng nhất của cấu hình baseline `configs/baseline.yaml`:
 
@@ -52,7 +55,16 @@ Toàn bộ thiết lập của một lần chạy nằm trong một tệp YAML (
 | `user_agent` | có email liên hệ | arXiv yêu cầu User-Agent mô tả rõ người chạy |
 | `run_id` | `B_{timestamp}` | Chạy mới mỗi lần; đặt giá trị cố định để tiếp tục (resume) một lần chạy dở |
 
-Mã `S2_API_KEY` (nếu có) được đọc từ biến môi trường, không lưu trong repo. Chiến lược chạy được chọn bằng khóa `config_name`; mã nguồn hiện có bốn giá trị: `B` (baseline), `D1` (discovery qua OAI-PMH), `A_BATCH` (discovery theo lô) và `A_PIPELINE` (Bounded Pipeline).
+Mã `S2_API_KEY` (nếu có) được đọc từ biến môi trường, không lưu trong repo. Chiến lược chạy được chọn bằng khóa `config_name`. Mã nguồn hiện hỗ trợ bốn giá trị, với vai trò khác nhau trong báo cáo:
+
+| `config_name` | Vai trò |
+|:---|:---|
+| `B` | **Cấu hình chính.** Discovery qua arXiv API; dùng để thu thập corpus cho cả bốn dải ID |
+| `D1` | Phương án so sánh: discovery qua OAI-PMH |
+| `A_BATCH` | Biến thể tối ưu: gộp request discovery theo lô |
+| `A_PIPELINE` | Biến thể tối ưu: Bounded Pipeline với hàng đợi có chặn trên |
+
+Ngoài ra, Kaggle snapshot (`src/discovery/kaggle.py`) được triển khai như một phương án tham khảo và không có giá trị `config_name` riêng. Cơ chế của từng phương pháp discovery được mô tả ở [](03_pipeline_stages.md), còn lý do chọn `B` làm cấu hình chính cùng số liệu so sánh nằm ở [](06_evaluation.md).
 
 ## 1.3. Sơ đồ kiến trúc pipeline
 

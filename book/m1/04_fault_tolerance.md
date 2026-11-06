@@ -25,10 +25,10 @@ Mọi lỗi nghiệp vụ kế thừa lớp `CrawlError(message, error_code, sta
 | `NETWORK_ERROR` | `utils/http.py` | Mất kết nối, luồng dữ liệu bị cắt; lỗi TLS (`SSLError`) | Có (riêng TLS: không) |
 | `HTTP_429` | `utils/http.py` | Vượt giới hạn tần suất | Có |
 | `HTTP_5XX` | `utils/http.py` | Máy chủ trả lỗi 5xx | Có với 500, 502, 503, 504 |
-| `NOT_FOUND` | `utils/http.py`, discovery | HTTP 404, hoặc OAI-PMH `idDoesNotExist` | Không |
+| `NOT_FOUND` | `utils/http.py`, discovery, extract | HTTP 404, OAI-PMH `idDoesNotExist` hoặc bản ghi đã xóa, hoặc thiếu tệp nén khi giải nén | Không |
 | `HTTP_4XX` | `utils/http.py` | Lỗi client khác 404 | Không |
 | `REQUEST_ERROR` | `utils/http.py` | Lỗi `requests` không thuộc các nhóm trên | Không |
-| `INVALID_RESPONSE` | discovery, downloader, extract | Phản hồi sai cấu trúc, thiếu trường, thân phản hồi rỗng | Không |
+| `INVALID_RESPONSE` | `utils/http.py`, discovery, downloader, extract | Phản hồi sai cấu trúc hoặc không giải mã được JSON, thiếu trường, thân phản hồi rỗng; thư mục `source/` cũ khác với kết quả giải nén lại | Không |
 | `INVALID_ID` | discovery | ID có hậu tố `vN` hoặc sai cú pháp | Không |
 | `CORRUPT_SOURCE` | `downloader/http.py`, `extract.py` | gzip/tar hỏng, đường dẫn nguy hiểm, vượt giới hạn giải nén | Không |
 | `UNSUPPORTED_FORMAT` | `extract.py` | Định dạng nguồn không nhận diện được | Không |
@@ -64,9 +64,9 @@ $$
 \text{delay} = \min\left(\text{base\_delay} \times 2^{\text{attempt}},\ 30\right)
 $$
 
-trong đó `attempt` đếm từ 0 cho lần thử lại đầu tiên và `base_delay` lấy từ `backoff_base_seconds` (mặc định 2 giây).
+trong đó `attempt` đếm từ 0 cho lần thử lại đầu tiên và `base_delay` lấy từ `backoff_base_seconds` (mặc định 2 giây). Nếu `Retry-After` là ngày giờ đã qua thì không chờ; nếu giá trị không đọc được thì dùng lùi cấp số nhân.
 
-**Giãn cách (pacing).** Lớp `Throttle` bảo đảm hai lệnh gọi liên tiếp cách nhau ít nhất `min_interval` giây, dùng đồng hồ đơn điệu `time.monotonic()` để không bị ảnh hưởng khi đổi giờ hệ thống. `Throttle.wait()` được gọi trước **mọi** lần thử, kể cả lần thử lại, nên retry không làm vượt giới hạn của arXiv (`arxiv_delay_seconds`, mặc định 3 giây).
+**Giãn cách (pacing).** Lớp `Throttle` bảo đảm hai lệnh gọi liên tiếp cách nhau ít nhất `min_interval` giây, dùng đồng hồ đơn điệu `time.monotonic()` để không bị ảnh hưởng khi đổi giờ hệ thống. `Throttle.wait()` được gọi trước **mọi** lần thử, kể cả lần thử lại, nên retry không làm vượt giới hạn của arXiv (`arxiv_delay_seconds`, mặc định 3 giây). Semantic Scholar có bộ giãn cách riêng: 1 giây giữa hai request khi có `S2_API_KEY`, 3 giây khi không có.
 
 :::{note}
 Lỗi TLS (`SSLError`) không được thử lại vì thử lại không thay đổi kết quả, và lỗi 4xx khác 408/429 là lỗi của yêu cầu nên cũng không thử lại.
@@ -101,19 +101,26 @@ Cơ chế này áp dụng cho từng loại dữ liệu:
 |:---|:---|
 | `metadata.json`, `manifest.json`, `references.json`, `validation.json`, `run.json` | `write_json_atomic` (tệp tạm `*.tmp`) |
 | Tệp nén tải về (`source.archive`) | `download_file` ghi tệp tạm `*.part` trong cùng thư mục, sau khi stream xong mới `os.replace`; lần thử thất bại xóa tệp tạm và không đụng tới tệp đích cũ |
-| Thư mục `source/` | Giải nén vào thư mục tạm rồi `os.replace` sang `source/` |
+| Thư mục `source/` | Giải nén vào thư mục tạm `.extract-*` cùng cấp, rồi `os.replace` sang `source/` |
+
+Nếu `source/` đã có nội dung, hệ thống giải nén lại vào thư mục tạm và so sánh; kết quả khác nhau thì dừng với mã `INVALID_RESPONSE` ("inspect before retrying") thay vì ghi đè. Các lỗi hệ thống tệp, gzip hoặc tar khi giải nén đều quy về `CORRUPT_SOURCE`.
 
 Khi có ngoại lệ, tệp tạm bị xóa và tệp cũ giữ nguyên.
 
+(m1-04-root-cause)=
 ## 4.4. Cô lập lỗi và xác định nguyên nhân gốc
 
 Lỗi được khoanh vùng ở ba tầng để một sự cố cục bộ không làm hỏng cả lần chạy:
 
 1. **Theo version**: `download_paper` bắt mọi ngoại lệ của từng version, ghi `manifest.json` với `download_status = failed` và mã lỗi, rồi tiếp tục version kế tiếp.
-2. **Theo stage**: `run_stage` bọc mỗi stage (extract, references, storage). Stage lỗi được ghi event `failed` kèm mã lỗi và thông điệp rút gọn (tối đa 300 ký tự), các stage còn lại vẫn chạy.
+2. **Theo stage**: `run_stage` bọc mỗi stage (extract, references, storage). 2. **Theo stage**: `run_stage` bọc mỗi stage (extract, references, storage). Stage lỗi được ghi event `failed` kèm thông điệp rút gọn (tối đa 300 ký tự), các stage còn lại vẫn chạy. Ở lớp bọc này, trường `error_code` là *tên lớp ngoại lệ* (ví dụ `CrawlError`). Mã lỗi ổn định ở mục 4.1 được ghi bởi chính stage trong `manifest.json`, `metadata.json`, `references.json` và các event do stage tự ghi (ví dụ `SCHEMA_ERROR` của storage).
 3. **Theo bài báo**: mỗi bài kết thúc bằng đúng một event `paper` ghi trạng thái `ok` hoặc `failed`, tổng thời gian và số version `ok/failed/skipped`. Bài lỗi không dừng vòng lặp qua các bài khác.
 
 Khi một bài thất bại, hàm `root_error_code` xác định **nguyên nhân gốc** theo thứ tự: discovery, rồi tải/trích xuất của từng version (đọc từ `manifest.json`), rồi references, cuối cùng mới đến lỗi của stage. Thứ tự này tránh việc `SCHEMA_ERROR` của storage (chỉ là hệ quả của dữ liệu thiếu) che mất nguyên nhân thật, chẳng hạn `HTTP_429`.
+
+:::{note}
+Nếu không có nguồn nào ở các bước trên mang mã lỗi, `root_error_code` trả về tên lớp ngoại lệ của stage đầu tiên bị lỗi. Do đó ở trường hợp hiếm này, event `paper` có thể chứa tên lớp thay vì mã ổn định. Đây là một hạn chế được nêu ở [](07_conclusion.md).
+:::
 
 Ở cấu hình `A_PIPELINE`, nguyên tắc cô lập được giữ nguyên: mỗi worker bọc stage bằng `try/except`, và khối `finally` luôn đẩy tín hiệu dừng, chờ hàng đợi cạn rồi `join` các luồng, nên dù luồng chính gặp ngoại lệ, các bài đang dở vẫn được các worker xử lý xong (xem [](02_bounded_pipeline.md)).
 
@@ -123,7 +130,7 @@ Trạng thái hoàn tất của từng khâu được lưu bền vững trên đ
 
 | Stage | Điều kiện bỏ qua | Khi gặp trạng thái khác |
 |:---|:---|:---|
-| Discovery | `metadata.json` có `status = ok` | `failed` được truy vấn lại |
+| Discovery | `metadata.json` có `status = ok` **và** (`latest_version = 1` hoặc `revised_dates` khác `null`) | `failed`, hoặc bài `ok` nhưng chưa lấy được ngày sửa đổi, được truy vấn lại |
 | Download | Mỗi version có `manifest.download_status = ok` | Version `failed` được tải lại |
 | Extract | `extract_status` là `ok` hoặc `empty` **và** nguồn đã lưu khớp manifest | Nếu không khớp: báo `CORRUPT_SOURCE`, yêu cầu kiểm tra thay vì tự ghi đè |
 | References | `references.json` có `status` là `ok` hoặc `empty` | `failed` được thu thập lại |
@@ -131,7 +138,7 @@ Trạng thái hoàn tất của từng khâu được lưu bền vững trên đ
 Hai chi tiết bảo vệ dữ liệu đã hoàn tất:
 
 - Với Extract, "khớp" nghĩa là mọi tệp khai báo tồn tại, chỉ gồm `.tex`/`.bib`, có `.tex` nếu trạng thái là `ok`, và tổng dung lượng bằng `kept_source_bytes` (hàm `_completed_source`).
-- Tầng lưu trữ (`storage._save`) **không bao giờ ghi đè** bản ghi `ok`/`empty` bằng bản ghi kém hơn; chỉ cho phép bổ sung thông tin (`_preserves`).
+- Hàm `_save` trong `storage.py` (dùng bởi `save_metadata`, `save_references`, `save_manifest`) bảo vệ bản ghi đã hoàn tất: nếu bản cũ là `ok` hoặc `empty` thì bản mới không được kém hơn, và với `metadata`/`references` chỉ cho phép *bổ sung* thông tin (`_preserves`); riêng `manifest` đã hoàn tất bị đóng băng hoàn toàn.
 
 `run.json` ghi nhận ngữ cảnh chạy lại:
 
@@ -167,6 +174,6 @@ Mỗi vấn đề có mức độ (`severity`): `error`, `warning`, `info` hoặ
 - `pending` nếu có phần chưa thu thập;
 - `ok` trong các trường hợp còn lại.
 
-Nếu trạng thái báo cáo khác `ok`, `store_paper` ném `CrawlError` với mã `SCHEMA_ERROR`, khiến stage storage thất bại và bài được đánh dấu `failed`; nguyên nhân gốc vẫn được truy ngược theo mục [4.4](#m1-04-fault-tolerance).
+Nếu trạng thái báo cáo khác `ok`, `store_paper` ném `CrawlError` với mã `SCHEMA_ERROR`, khiến stage storage thất bại và bài được đánh dấu `failed`; nguyên nhân gốc vẫn được truy ngược theo mục ßßß[4.4](#m1-04-root-cause).
 
-Ngoài kiểm định từng bài, `validate_run` duyệt toàn bộ ID đầu vào để phát hiện ID bị trùng, thư mục bài lạ không thuộc danh sách đầu vào, hoặc tên thư mục không khớp ID. Phần kiểm thử offline của các cơ chế trong chương này nằm ở `tests/test_http.py`, `tests/test_storage.py`, `tests/test_validation.py` và `tests/test_errors.py`.
+Ngoài kiểm định từng bài, `validate_run` duyệt toàn bộ ID đầu vào để phát hiện ID bị trùng (`DUPLICATE_PAPER`), thư mục bài lạ không thuộc danh sách đầu vào (`UNEXPECTED_PAPER`) hoặc tên thư mục không khớp ID. Các mã nêu trong bảng chỉ là nhóm chính; bộ kiểm định còn dùng thêm các mã như `DUPLICATE_VERSION`, `INVALID_FORMAT`, `MISSING_ERROR_CODE`, `NOT_COLLECTED` và `IN_PROGRESS` (hai mã cuối có mức `pending`). Phần kiểm thử offline của các cơ chế trong chương này nằm ở `tests/test_http.py`, `tests/test_extract.py`, `tests/test_storage.py`, `tests/test_validation.py` và `tests/test_errors.py`.

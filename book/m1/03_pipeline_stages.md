@@ -38,24 +38,65 @@ Trong trường hợp truy vấn lịch sử phiên bản không thành công ho
 
 ## 3.2. Download (Tải mã nguồn và tầng HTTP — Hương phụ trách)
 
-Sau khi xác định danh sách phiên bản, khâu Download tải gói mã nguồn nguyên bản của từng phiên bản về máy cục bộ.
+Sau khi Discovery xác định danh sách phiên bản, khâu Download tải gói mã nguồn nguyên bản của **từng phiên bản** `v1 … vN` về máy cục bộ. Mỗi phiên bản là một request riêng, các request chạy tuần tự và dùng chung một bộ điều tốc.
 
 ### Điểm cuối phục vụ mã nguồn
-arXiv cung cấp mã nguồn thông qua máy chủ lưu trữ chuyên dụng `export.arxiv.org`. Thay vì tải file PDF đã biên dịch, pipeline nhắm thẳng vào endpoint:
-$$\text{https://export.arxiv.org/src/}\{arxiv\_id\}\text{v}\{version\}$$
 
-*Lưu ý:* Tuyệt đối không cào trực tiếp qua `arxiv.org` để tránh bị cơ chế chống bot chặn HTTP 403.
+arXiv phục vụ mã nguồn qua máy chủ mirror `export.arxiv.org`. Thay vì tải tệp PDF đã biên dịch, pipeline gọi trực tiếp endpoint có hậu tố phiên bản:
+
+```text
+https://export.arxiv.org/src/{arxiv_id}v{version}
+```
+
+| Lựa chọn | Lý do |
+|:--|:--|
+| `export.arxiv.org`, không phải `arxiv.org` | Đề bài yêu cầu trỏ tải tự động vào mirror này. Cào dày đặc trang chính `arxiv.org` sẽ bị nhận diện là robot và bị chặn HTTP 403 |
+| Hậu tố `vN` trong URL | Đây là cách duy nhất lấy từng bản sửa đổi riêng lẻ, đúng yêu cầu thu thập mọi phiên bản |
+| Tải từng bài, không tải kho S3 | Kho nguồn đầy đủ cỡ nhiều TB và tính phí theo người yêu cầu (requester-pays); nhóm chỉ cần 5.000 bài trong dải được giao |
+| `requests` cùng tầng HTTP tự viết | Giãn cách, retry, ghi nguyên tử và đo lường nằm ở một chỗ (`utils/http.py`) và dùng chung cho các module gọi HTTP |
+
+### Quy trình cho mỗi bài (`src/downloader/http.py`)
+
+1. Đọc `metadata.json`. Nếu Discovery chưa `ok` hoặc không có danh sách phiên bản thì bỏ qua bài (ghi event `skipped`).
+2. Với mỗi phiên bản trong `versions`: nếu `manifest.json` đã có `download_status = ok` thì bỏ qua (resume).
+3. Tải về `tmp/<paper_key>/v<N>/source.archive`. Phản hồi rỗng (0 byte) bị coi là lỗi `INVALID_RESPONSE` và tệp rỗng bị xóa.
+4. Nhận diện định dạng, rồi ghi `manifest.json` với `download_status = ok`.
+5. Nếu lỗi, `manifest.json` được ghi với `download_status = failed` kèm `error_code`; ngoại lệ ngoài dự kiến cũng để lại manifest (mã `INVALID_RESPONSE`). Một phiên bản lỗi **không** làm dừng các phiên bản còn lại của bài. Hàm trả về số phiên bản `ok / failed / skipped`.
 
 ### Tầng HTTP chung (`src/utils/http.py`)
-- **Điều tốc tập trung (Throttle):** Duy trì giãn cách $\ge 3.0$s giữa các request bằng đồng hồ đơn điệu `time.monotonic()`.
-- **Streaming & Ghi nguyên tử:** Thiết lập `stream=True` và đọc theo khối `chunk_size=65536` (64 KB). Tệp tải về được ghi tạm vào `.part` cùng thư mục (`NamedTemporaryFile`), sau khi tải xong mới gọi `os.replace()` hoán đổi nguyên tử sang tên tệp chính thức, tránh để lại tệp hỏng.
-- **Retry & Exponential Backoff:** Đối với các mã lỗi có thể thử lại (408, 429, 500, 502, 503, 504 hoặc đứt cáp mạng), hệ thống thử lại tối đa 3 lần. Nếu có tiêu đề `Retry-After`, hệ thống chờ theo chỉ định; nếu không, áp dụng lùi số nhân $\text{delay} = \min(\text{base\_delay} \times 2^{\text{attempt}}, 30\text{s})$.
-- **Nhận diện định dạng tệp:** Kiểm tra magic bytes ở đầu tệp nén để phân loại:
-  - `\x1f\x8b` kèm chữ ký `ustar` bên trong: gói `tar.gz`.
-  - `\x1f\x8b` thông thường: tệp đơn `gz`.
-  - Chữ ký `ustar` tại offset 257: gói `tar`.
-  - Chữ ký `%PDF` tại byte đầu: bản `pdf` (không có nguồn TeX).
-  - Không khớp: `unknown` (ghi nhận mã lỗi `UNSUPPORTED_FORMAT`).
+
+- **Điều tốc tập trung (`Throttle`).** Giãn cách tối thiểu $\ge 3.0$ giây (tham số `arxiv_delay_seconds`) giữa hai request, đo bằng đồng hồ đơn điệu `time.monotonic()`. `Throttle.wait()` được gọi trước **mọi** lần thử, kể cả lần thử lại, nên retry không làm vượt giới hạn của arXiv.
+- **Streaming và ghi nguyên tử.** Request dùng `stream=True` và đọc theo khối 64 KB (`chunk_size=65536`). Dữ liệu được ghi vào tệp tạm `.part` trong cùng thư mục (`NamedTemporaryFile`); chỉ khi tải xong mới `os.replace()` sang tên chính thức. Lần thử lỗi sẽ xóa tệp tạm và không đụng tới tệp đích cũ.
+- **Thử lại và lùi cấp số nhân.** Các tình huống được thử lại: mã 408, 429, 500, 502, 503, 504, timeout (30 giây mỗi request), mất kết nối và luồng dữ liệu bị cắt. Với `max_retries = 3`, mỗi lần tải có tối đa 4 request, và mỗi lần thử lại tải lại từ đầu. Nếu có tiêu đề `Retry-After` thì chờ theo đó, nếu không thì chờ theo công thức dưới đây; cả hai đều bị chặn trên 30 giây:
+
+$$\text{delay} = \min\left(\text{base\_delay} \times 2^{\text{attempt}},\ 30\right), \quad \text{base\_delay} = 2\ \text{giây (mặc định)}$$
+
+- **Không thử lại.** Lỗi TLS (`SSLError`, báo `NETWORK_ERROR`), HTTP 404 (`NOT_FOUND`) và các mã 4xx khác (`HTTP_4XX`), vì thử lại không thay đổi kết quả. Danh sách mã lỗi đầy đủ ở [](#m1-04-fault-tolerance).
+- **Nhận diện bằng header.** Mỗi request mang `User-Agent` mô tả rõ nhóm và email liên hệ, theo yêu cầu của arXiv.
+- **Hook đo lường.** Mỗi lần thử gọi hook `on_attempt` ghi mã trạng thái và thời lượng thuần của request (không tính thời gian chờ) phục vụ thống kê ở [](#m1-05-results).
+
+### Nhận diện định dạng và manifest (`src/downloader/http.py`)
+
+Hàm `detect_format` chỉ đọc *magic bytes* (512 byte đầu của tệp):
+
+| Dấu hiệu | `source_format` |
+|:--|:--|
+| Bắt đầu bằng `\x1f\x8b`; sau khi giải nén gzip, byte 257–261 là `ustar` | `tar.gz` |
+| Bắt đầu bằng `\x1f\x8b`, không có `ustar` bên trong | `gz` (một tệp đơn) |
+| `ustar` tại offset 257 | `tar` |
+| Bắt đầu bằng `%PDF` | `pdf` (bài chỉ có PDF, không có nguồn TeX) |
+| Không khớp mẫu nào | `unknown` |
+
+- Gzip không đọc được gây lỗi `CORRUPT_SOURCE` ngay tại bước này, và phiên bản được đánh dấu `failed`.
+- Định dạng `pdf` và `unknown` **không** bị coi là lỗi tải: `download_status` vẫn là `ok`. Việc chúng có dùng được hay không (mã `NO_TEX_SOURCE`, `UNSUPPORTED_FORMAT`) do bước Extract quyết định ở mục 3.3.
+
+Mỗi phiên bản có một `versions/vN/manifest.json`. Khâu Download điền các trường sau, còn các trường của Extract giữ trạng thái chờ:
+
+| Nhóm trường | Trường | Giá trị sau Download |
+|:--|:--|:--|
+| Định danh | `arxiv_id`, `version`, `versioned_id` | Ví dụ `2507.01659`, `2`, `2507.01659v2` |
+| Kết quả tải | `download_status`, `error_code`, `source_format`, `archive_path`, `archive_bytes` | `ok` hoặc `failed`; đường dẫn tương đối so với thư mục chạy |
+| Dành cho Extract | `extract_status`, `parse_status`, `source_files`, `unpacked_total_bytes`, `kept_source_bytes` | `pending` hoặc rỗng, được điền ở bước sau |
 
 ---
 

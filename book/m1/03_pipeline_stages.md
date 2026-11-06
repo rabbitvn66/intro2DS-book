@@ -83,13 +83,30 @@ $$\text{https://export.arxiv.org/src/}\{arxiv\_id\}\text{v}\{version\}$$
 
 Extract chuyển gói nguồn (archive) đã tải thành tập tệp `.tex` và `.bib` phục vụ Milestone 2 — Parsing. Đầu vào gồm danh sách phiên bản trong `metadata.json`, manifest của từng phiên bản và tệp `source.archive` do Download tạo. Đầu ra là thư mục `versions/v<N>/source/` cùng manifest được bổ sung danh sách tệp, định dạng, dung lượng và trạng thái trích xuất. Extract xử lý tệp cục bộ; việc gửi yêu cầu mạng và thử tải lại thuộc module Download.
 
-Luồng gọi hàm trong [module extract][extract-pipeline-code] được tổ chức theo ba cấp:
+Luồng gọi hàm trong [module Extract][extract-pipeline-code] tách việc duyệt bài, quản lý trạng thái phiên bản và xử lý archive. `extract_paper()` đọc metadata hợp lệ rồi gọi `extract_version()` cho từng version; hàm này chỉ gọi `extract_source()` khi cần trích xuất và Download đã thành công. Sơ đồ thể hiện các nhánh xử lý chính:
 
-1. `extract_paper()` đọc metadata có trạng thái `ok`, duyệt từng version và gọi `extract_version()`. Một version lỗi không ngăn vòng lặp xử lý các version còn lại; sau vòng lặp, hàm báo lỗi tổng hợp cho bộ điều phối nếu cần.
-2. `extract_version()` kiểm tra schema và định danh trong manifest, sau đó kiểm tra khả năng tái sử dụng nguồn đã có. Chỉ khi cần trích xuất và `download_status = ok`, hàm mới gọi `extract_source()`.
-3. `extract_source()` nhận diện nội dung, trích xuất vào thư mục tạm và công bố `source/` khi hoàn tất. Hàm trả kết quả cho `extract_version()` cập nhật manifest; bản thân `extract_source()` không ghi manifest.
+```text
+extract_paper(): đọc metadata hợp lệ, lặp từng version
+    │
+    ▼
+extract_version(): kiểm tra manifest và nguồn hiện có
+    ├─ Manifest sai / nguồn đã hoàn tất không khớp → Báo lỗi
+    ├─ Đã hoàn tất, nguồn khớp                    → Tái sử dụng
+    ├─ Download chưa ok                          → Chưa trích xuất
+    └─ Cần trích xuất, download ok
+         │ source.archive từ Download
+         ▼
+       extract_source(): nhận diện → giải nén khi cần → lọc .tex/.bib
+         ├─ Hoàn tất → công bố hoặc dùng lại source/
+         │              ├─ Có .tex    → ok
+         │              └─ Không .tex → empty + NO_TEX_SOURCE
+         └─ Lỗi → không công bố nguồn mới → failed
+         │ trả kết quả
+         ▼
+       extract_version(): cập nhật manifest.json
+```
 
-Cách phân tách này giữ thao tác xử lý archive độc lập với quản lý trạng thái theo phiên bản, đồng thời cho phép kiểm thử trích xuất bằng dữ liệu cục bộ.
+`extract_source()` trả kết quả nhưng không ghi manifest. Các lỗi kiểm tra trước lời gọi này được báo trực tiếp, không đi qua nhánh cập nhật kết quả trích xuất. `extract_paper()` tiếp tục các version còn lại trước khi báo lỗi tổng hợp; cơ chế cô lập lỗi được trình bày tại [mục 4.4](04_fault_tolerance.md).
 
 ### Nhận diện định dạng và trích xuất chọn lọc
 
@@ -130,7 +147,7 @@ Hai tổng dung lượng sau giải nén và sau lọc chỉ được ghi khi x�
 - `empty`: dữ liệu nhận diện là PDF hoặc tar xử lý được nhưng không có `.tex`, kèm `NO_TEX_SOURCE`; nếu tar chỉ có `.bib`, các tệp này vẫn được giữ.
 - `failed`: nguồn hỏng, không hỗ trợ hoặc không thể xử lý theo các điều kiện kiểm tra; không được diễn giải thành kết quả rỗng hợp lệ.
 
-Với manifest đã `ok`/`empty`, [`_completed_source()`][extract-cache-code] kiểm tra các tệp khai báo, hậu tố, quan hệ trạng thái và tổng kích thước trước khi dùng lại; không cần archive còn tồn tại. Khi source đã được công bố nhưng manifest chưa ghi xong, bộ trích xuất có thể trích xuất lại vào thư mục tạm rồi [so sánh tập tệp và từng byte][extract-compare-code] với nguồn cũ. Nguồn khác biệt không bị ghi đè. Kiểm tra cache đã hoàn tất dựa trên danh sách tệp và kích thước, chưa sử dụng mã băm; chi tiết phục hồi nằm ở mục 4.5 của [](04_fault_tolerance.md).
+Kết quả `ok`/`empty` chỉ được tái sử dụng sau khi [`_completed_source()`][extract-cache-code] kiểm tra nguồn theo manifest. Khi cần trích xuất, kết quả được chuẩn bị trong thư mục tạm và chỉ được công bố sau xử lý; nguồn cũ khác biệt không bị ghi đè. Điều kiện cache, phục hồi sau gián đoạn và giới hạn của việc kiểm tra kích thước được trình bày tại [mục 4.3 và 4.5](04_fault_tolerance.md).
 
 ### Vai trò đối với Milestone 2
 
@@ -148,7 +165,7 @@ Tập `.tex`/`.bib`, đường dẫn tương đối và danh sách tệp theo ph
 
 ### Vai trò và cấu trúc lưu trữ
 
-Dữ liệu của từng bài báo được tổ chức độc lập theo cấu trúc thư mục phân cấp theo lần chạy, bài báo và phiên bản. Các công đoạn ghi kết quả trực tiếp vào vị trí chuẩn; [hàm tích hợp `store_paper()`][storage-hook-code] ở cuối pipeline kiểm định các kết quả đó và ghi `validation.json`. Storage không sao chép corpus sang một hệ lưu trữ thứ hai hoặc tạo cơ sở dữ liệu.
+Dữ liệu của từng bài báo được tổ chức độc lập theo ba cấp: lần chạy, bài báo và phiên bản. Các công đoạn ghi kết quả trực tiếp vào vị trí chuẩn; [hàm tích hợp `store_paper()`][storage-hook-code] ở cuối pipeline kiểm định dữ liệu đã có và ghi `validation.json`. Module không sao chép corpus sang một hệ lưu trữ thứ hai hoặc tạo cơ sở dữ liệu.
 
 ```text
 experiments/<run_id>/
@@ -173,11 +190,29 @@ experiments/<run_id>/
     └── source.archive              # Archive trung gian do Download ghi
 ```
 
-`experiments` là giá trị `output_root` mặc định; các tên tệp trong sơ đồ minh họa cách tổ chức, không yêu cầu mỗi version phải có `main.tex` hoặc `.bib`. Hàm [`paper_key()`][common-io-code] đổi `.` thành `-` và `/` thành `__`, còn ID gốc được giữ trong JSON. Ví dụ, `hep-th/9901001` được lưu dưới `hep-th__9901001`. Mỗi version dùng thư mục `v<N>` và `versioned_id = <arxiv_id>v<N>`, giúp các phiên bản không ghi chồng lên nhau. `papers/` chứa corpus và các bản ghi mô tả; `tmp/` chứa dữ liệu trung gian; hai JSONL phục vụ theo dõi thực thi. Extract không tự xóa archive sau xử lý.
+`experiments` là `output_root` mặc định; tên tệp trong sơ đồ chỉ minh họa cách tổ chức, không yêu cầu mỗi version có `main.tex` hoặc `.bib`. Hàm [`paper_key()`][common-io-code] đổi `.` thành `-` và `/` thành `__`, chẳng hạn `hep-th/9901001` thành `hep-th__9901001`; ID gốc vẫn nằm trong JSON. `papers/` chứa corpus và bản ghi mô tả, `tmp/` chứa archive trung gian, còn JSONL phục vụ theo dõi thực thi. Extract không tự xóa archive sau xử lý.
 
-### Mô hình dữ liệu và các bản ghi JSON
+### Thiết kế schema và hợp đồng dữ liệu
 
-Hai nhóm dữ liệu nội dung là **bài báo** và **references**, được lưu bằng JSON theo từng bài. Các quan hệ ID được kiểm tra bằng mã Python, chưa được triển khai thành khóa chính/khóa ngoại của cơ sở dữ liệu. Schema chung nằm trong [`schema.py`][schema-code] và các [hàm validation][validation-records-code]; việc một trường phải hiện diện không đồng nghĩa giá trị của trường luôn khác `null`.
+Pipeline nhiều module cần thống nhất tên trường, kiểu dữ liệu và ý nghĩa trạng thái để một công đoạn có thể đọc kết quả của công đoạn trước. Trong bản triển khai, hợp đồng dữ liệu (*Data Contract*) được thể hiện qua [`schema.py`][schema-code] và [các hàm validation][validation-records-code]: Discovery cung cấp ID và danh sách version; Download khởi tạo manifest; Extract bổ sung danh sách tệp và số đo vào manifest; References tạo các bản ghi cùng ID bài trích dẫn; Storage đối chiếu các thành phần đó. Không phải mọi điểm ghi đều gọi validator trước khi ghi, nên hợp đồng còn được kiểm tra ở bước cuối.
+
+Về mặt kỹ thuật, ba cấp lưu trữ phân tách ba loại ngữ cảnh: `run` lưu cấu hình, đầu vào và môi trường; `paper` giữ metadata cùng references của một bài; `version` giữ archive, nguồn và trạng thái riêng của từng bản nộp. Base ID nhận diện bài xuyên suốt pipeline, còn `versioned_id = <arxiv_id>v<N>` xác định chính xác bản được tải. Cấu trúc này hỗ trợ đối chiếu nhiều phiên bản mà không trộn tệp nguồn của chúng.
+
+| Biểu diễn | Ý nghĩa trong hợp đồng dữ liệu |
+|:---|:---|
+| `null` | Chưa biết giá trị hoặc chưa có số đo; không thay bằng 0 |
+| `[]` | Danh sách không có phần tử; ý nghĩa phụ thuộc trường và trạng thái đi kèm |
+| `empty` | Kết quả rỗng đã được công đoạn xác nhận, như nguồn không có TeX |
+| `pending` | Công đoạn chưa hoàn tất; chưa thể kết luận kết quả rỗng |
+| `failed` | Công đoạn thất bại; mã lỗi và báo cáo kiểm định hỗ trợ truy nguyên |
+
+Các quy ước này cho phép validator phân biệt thiếu dữ liệu với kết quả rỗng, giúp các module quyết định tái sử dụng kết quả, đồng thời hỗ trợ gỡ lỗi qua ID/version. [Ngữ cảnh trong `run.json`][run-record-code] hỗ trợ truy vết điều kiện thực nghiệm; các điều kiện resume cụ thể thuộc [mục 4.5](04_fault_tolerance.md).
+
+Bản triển khai hiện sử dụng JSON cho bản ghi và JSONL cho nhật ký. Xét về kỹ thuật, cách tổ chức này thuận tiện để kiểm tra từng bài và trao đổi dữ liệu mà chưa cần dịch vụ cơ sở dữ liệu; đổi lại, truy vấn tổng hợp cần quét nhiều tệp và chưa có giao dịch chung giữa các bản ghi.
+
+### Schema nội bộ phục vụ Milestone 1
+
+Metadata, manifest và references lưu kết quả thu thập; validation lưu kết quả kiểm tra. `run.json` cùng các nhật ký lưu ngữ cảnh vận hành. Chúng phục vụ pipeline M1, chưa phải bộ bảng bàn giao cuối. Các bảng dưới mô tả field nội bộ; một trường phải hiện diện không đồng nghĩa giá trị luôn khác `null`.
 
 **Metadata bài báo — `metadata.json`.** Bản ghi có đủ các trường sau:
 
@@ -216,35 +251,57 @@ Metadata `ok` phải có danh sách version không rỗng, không trùng hoặc 
 
 References đã chuẩn hóa không bị loại chỉ vì thiếu arXiv ID. Trong [hàm chuẩn hóa hiện tại][references-normalize-code], `ref_submission_date` luôn là `null` vì request không lấy ngày nộp; mục có `citedPaper = null` bị loại trước khi đến Storage. Storage kiểm tra những bản ghi đã nhận, không bổ sung lại các mục đó.
 
-**Báo cáo kiểm định — `validation.json`.** Báo cáo gồm `arxiv_id`, `status` và `issues`; mỗi issue có `code`, `path`, `message`, `severity`. Đây là kết quả kiểm tra dữ liệu tại thời điểm thực hiện, không thay thế metadata hoặc manifest. Giá trị `null` biểu thị thông tin chưa biết, còn `empty` là trạng thái rỗng được xác nhận theo từng công đoạn. `schema_version` được lưu ở [cấp cấu hình/run][run-record-code]; hiện chưa có cơ chế chuyển đổi giữa các phiên bản schema cho các bản ghi này.
+**Báo cáo kiểm định — `validation.json`.** Báo cáo gồm `arxiv_id`, `status` và `issues`; mỗi issue có `code`, `path`, `message`, `severity`. Đây là kết quả kiểm tra dữ liệu tại thời điểm thực hiện, không thay thế metadata hoặc manifest. `schema_version` được lưu ở [cấp cấu hình/run][run-record-code]; hiện chưa có cơ chế chuyển đổi giữa các phiên bản schema cho các bản ghi này.
 
-### Luồng ghi, đọc và nhật ký
+### Luồng dữ liệu và kiểm định
 
-Trách nhiệm ghi được phân chia theo công đoạn: Discovery ghi metadata; [`download_version()`][download-manifest-code] tạo manifest và archive; Extract cập nhật manifest và source; [hàm tích hợp References trong `main.py`][references-hook-code] ghi references. Storage đọc các bản ghi và tệp nguồn qua `validate_paper()`, sau đó ghi báo cáo kiểm định. Module còn cung cấp các hàm `load_metadata()`, `load_references()`, `load_manifest()` và `load_paper()`; hàm cuối trả các manifest theo khóa version nguyên. [API lưu/đọc Storage][storage-api-code] phân biệt tệp thiếu với JSON hỏng: tệp thiếu trả `None`, JSON hỏng gây ngoại lệ.
+Sơ đồ phân định module tạo dữ liệu và bước Storage đọc, kiểm định dữ liệu. [`download_version()`][download-manifest-code] tạo manifest/archive, Extract cập nhật manifest và source, còn [hàm tích hợp References][references-hook-code] ghi references:
 
-Các hàm `save_metadata()`, `save_references()` và `save_manifest()` có kiểm tra schema và bảo vệ bản ghi hoàn tất, nhưng các điểm ghi của pipeline chính nêu trên gọi trực tiếp `write_json_atomic()`. Vì vậy, cơ chế bảo vệ trong API `save_*` chưa phải chính sách ghi chung đã được toàn pipeline sử dụng.
+```text
+Discovery  ── ghi ──> metadata.json
+Download   ── ghi ──> manifest.json + source.archive
+                                  │
+Extract    <── đọc ────────────────┘
+           └── ghi ──> source/ + manifest.json cập nhật
+References ── ghi ──> references.json
 
-[`write_json_atomic()`][common-io-code] ghi JSON bằng UTF-8, giữ ký tự Unicode với `ensure_ascii=False`, rồi thay thế tệp đích bằng `os.replace()` từ tệp `.tmp` cùng thư mục. Phạm vi nguyên tử là từng tệp; cơ chế này chưa tạo giao dịch giữa JSON và source, không có `fsync` hoặc khóa nhiều tiến trình ghi. Chi tiết xử lý gián đoạn nằm ở mục 4.3 của [](04_fault_tolerance.md).
+metadata.json + manifest.json + source/ + references.json
+    │
+    ▼
+store_paper() ── gọi ──> validate_paper() [chỉ đọc]
+    ▲                        │
+    └──── issues + status ────┘
+    │
+    └── ghi validation.json + log → báo kết quả cho pipeline
+```
 
-[`events.jsonl`][business-log-code] ghi trạng thái nghiệp vụ theo `stage`/`status`, còn [`metrics_events.jsonl`][metrics-log-code] ghi sự kiện phép đo theo `stage`/`event`, cùng thời lượng, attempt hoặc mẫu tài nguyên. Cả hai ghi nối tiếp, mỗi dòng là một đối tượng JSON theo UTF-8; chúng không dùng cách thay thế nguyên tử của bản ghi JSON. Hai nhật ký hỗ trợ truy vết và đo đạc, trong khi metadata, manifest, references và validation mô tả dữ liệu đã lưu.
+[`validate_paper()`][validation-paper-code] chỉ đọc: kiểm tra định danh/schema, đối chiếu version, manifest, tệp nguồn, kích thước khi có số đo và references. Báo cáo ưu tiên `failed` khi có lỗi; nếu không, còn công đoạn đang chạy thì `running`, còn dữ liệu chưa thu thập thì `pending`, còn lại là `ok`. Cảnh báo và kết quả rỗng hợp lệ không tự làm báo cáo thất bại. [`store_paper()`][storage-hook-code] ghi báo cáo và nhật ký, trả báo cáo khi `ok`, còn trạng thái khác ném `CrawlError` với mã `SCHEMA_ERROR`. Tiêu chí và mã issue chi tiết nằm ở [mục 4.6](04_fault_tolerance.md#m1-04-validation).
 
-### Kiểm định corpus và tổng hợp trạng thái
+[API đọc Storage][storage-api-code] còn cung cấp `load_metadata()`, `load_references()`, `load_manifest()` và `load_paper()` để nạp dữ liệu; hàm cuối trả các manifest theo khóa version nguyên. Các API `save_*` có kiểm tra và bảo vệ riêng, nhưng những điểm ghi của pipeline chính gọi trực tiếp `write_json_atomic()`, chưa dùng chúng làm chính sách ghi chung.
 
-Trong [`store_paper()`][storage-hook-code], luồng xử lý là gọi `validate_paper()` → ghi `validation.json` → ghi sự kiện Storage → trả báo cáo nếu `status = ok`; trạng thái khác làm hàm ném `CrawlError` với mã `SCHEMA_ERROR`. [`validate_paper()`][validation-paper-code] chỉ đọc, đối chiếu version được discovery với thư mục thực tế, rồi kiểm tra metadata, từng manifest/source và references. Bộ kiểm định không tự sửa hoặc xóa dữ liệu.
+[`write_json_atomic()`][common-io-code] ghi JSON UTF-8 qua tệp tạm rồi `os.replace()` theo từng tệp; đây chưa phải giao dịch nhiều tệp hoặc bảo đảm bền vững tuyệt đối khi mất điện. [Nhật ký nghiệp vụ][business-log-code] dùng `stage`/`status`, còn [nhật ký phép đo][metrics-log-code] dùng `stage`/`event`; cả hai ghi nối tiếp từng đối tượng JSON UTF-8 trên một dòng. Chi tiết ghi nguyên tử, chống ghi đè và phục hồi được dẫn sang [mục 4.3–4.5](04_fault_tolerance.md).
 
-Các tiêu chí bao gồm định danh và kiểu dữ liệu, tính nhất quán danh sách version/trạng thái, đường dẫn an toàn, tệp nguồn thiếu hoặc không khai báo, cùng tổng kích thước so với `kept_source_bytes` khi có số đo. References thiếu metadata tùy chọn hoặc có bản ghi giống hệt được cảnh báo; các bản ghi không bị tự xóa. Chi tiết quy tắc và mã issue được trình bày tại [mục 4.6](04_fault_tolerance.md#m1-04-validation).
+### Phân biệt với schema bàn giao toàn dự án
 
-Trạng thái báo cáo được tổng hợp theo thứ tự ưu tiên: có vấn đề mức `error` thì `failed`; nếu không, có `IN_PROGRESS` thì `running`; còn vấn đề mức `pending` thì `pending`; các trường hợp còn lại là `ok`. Cảnh báo và thông tin về kết quả rỗng hợp lệ không tự làm báo cáo thất bại. Do đó, một version `empty + NO_TEX_SOURCE` vẫn có thể thuộc corpus hợp lệ, nhưng chưa có nguồn TeX để Parsing. `parse_status = pending` không làm M1 chưa hoàn tất. Trạng thái `pending`/`running` của báo cáo vẫn khiến hàm Storage báo lỗi cho bộ điều phối vì dữ liệu chưa sẵn sàng.
+Theo [yêu cầu chung của đồ án][course-project], dữ liệu được bàn giao cuối ở Milestone 3. Bộ bảng được xác định theo từng milestone:
 
-### Liên hệ với các milestone tiếp theo
+| Bảng đầu ra | Milestone quy định | Nguồn dữ liệu hoặc vai trò |
+|:---|:---|:---|
+| `papers` | M1 | Metadata bài báo thu thập được |
+| `references` | M1 | Metadata trích dẫn đủ điều kiện xuất |
+| `elements` | M2 | Các phần tử nội dung đã phân tích và loại trùng |
+| `hierarchy` | M2 | Quan hệ nút–cha theo phiên bản |
+| `bibtex` | M2 | Các mục BibTeX đã chuẩn hóa và hợp nhất |
+| `predictions` | M3 | Kết quả đối sánh references |
 
-Manifest chỉ ra tệp nguồn và trạng thái theo version; validation giúp bước sau phân biệt corpus hoàn tất, nguồn rỗng hợp lệ và dữ liệu thiếu hoặc không nhất quán. References cấp bài giữ các trường định danh và giá trị thiếu để phục vụ đối sánh ở Milestone 3. Tuy nhiên, validation hiện kiểm tra cấu trúc, trạng thái và một phần tính toàn vẹn hệ thống tệp: chưa tính mã băm nguồn, xác nhận archive còn tồn tại, phân tích cú pháp TeX/BibTeX hay xác minh tính đầy đủ của trích dẫn. Vì vậy, báo cáo `ok` xác nhận dữ liệu đáp ứng các kiểm tra M1 đã triển khai; khả năng phân tích và chất lượng đối sánh cần được kiểm tra ở các milestone tương ứng.
+[Yêu cầu M1][course-crawling] cho phép nhóm tự tổ chức corpus và yêu cầu giữ mọi reference đã thu thập cục bộ; bảng `references` bàn giao chỉ chứa bản ghi có `ref_arxiv_id` khác `null`. Vì vậy, nullable trong JSON nội bộ không mâu thuẫn với ràng buộc ID bắt buộc ở bảng cuối. Metadata/references M1 là nguồn để ánh xạ sang hai bảng tương ứng, không phải xuất nguyên bản ghi bao ngoài kèm trạng thái vận hành. Manifest và validation không phải hai bảng đầu ra cuối.
+
+[Yêu cầu M2][course-parsing] quy định đầu ra phân tích cấu trúc; [M3][course-matching] quy định đối sánh và bàn giao dữ liệu dưới dạng Parquet phân mảnh. Pipeline M1 đang khảo sát chưa tạo `elements`, `hierarchy`, `bibtex`, `predictions` hoặc xuất sáu bảng Parquet. Manifest và báo cáo validation hỗ trợ chuẩn bị đầu vào cho các bước đó; `parse_status = pending` không làm M1 chưa hoàn tất, nhưng `ok` ở M1 cũng chưa chứng minh TeX/BibTeX phân tích được hoặc references đầy đủ. Giới hạn kiểm định được trình bày tại [mục 4.6](04_fault_tolerance.md#m1-04-validation).
 
 [extract-pipeline-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/extract.py#L259-L333
 [extract-source-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/extract.py#L162-L236
 [extract-tar-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/extract.py#L21-L137
 [extract-cache-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/extract.py#L239-L256
-[extract-compare-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/extract.py#L140-L159
 [schema-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/schema.py#L8-L71
 [storage-hook-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/storage.py#L178-L213
 [storage-api-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/stages/storage.py#L14-L196
@@ -257,3 +314,7 @@ Manifest chỉ ra tệp nguồn và trạng thái theo version; validation giúp
 [business-log-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/utils/common.py#L89-L127
 [metrics-log-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/metrics.py#L282-L319
 [run-record-code]: https://github.com/qaztyhn/intro2DS/blob/e5f8700919a00f2031a47e576ca27ea96757d961/src/main.py#L31-L58
+[course-project]: https://hcmus-cs-ta.github.io/lab-book/intro-ds/statement/
+[course-crawling]: https://hcmus-cs-ta.github.io/lab-book/intro-ds/statement/crawling/
+[course-parsing]: https://hcmus-cs-ta.github.io/lab-book/intro-ds/statement/parsing/
+[course-matching]: https://hcmus-cs-ta.github.io/lab-book/intro-ds/statement/matching/

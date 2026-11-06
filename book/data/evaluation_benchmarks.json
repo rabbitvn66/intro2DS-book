@@ -1,0 +1,1084 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "tool_comparison": "Báo cáo thực nghiệm B, K, D1 do nhóm cung cấp",
+    "tool_report_sha256": "be6ab7a36e6a8c844b10241e1c08080640e011aca99632f60b162b654affbbeb",
+    "concurrency_report": "Experiment.pdf",
+    "concurrency_report_sha256": "0eb5d14613eff7560aa2c2b827dcbb126a08cac46d8a3d056015565b344d4f52",
+    "note": "Concurrency values are per-run summaries from the same experiments represented in Experiment.pdf; no rounded PDF table values are reused for computation."
+  },
+  "tool_runs": [
+    {
+      "variant": "B",
+      "discovery": "arXiv API",
+      "download": "HTTP /src/",
+      "n_ids": 40,
+      "paper_ok": 40,
+      "paper_failed": 0,
+      "paper_skipped": 0,
+      "wall_seconds": 384.817,
+      "rss_peak_bytes": null,
+      "repeats": 1
+    },
+    {
+      "variant": "K",
+      "discovery": "Kaggle snapshot",
+      "download": "HTTP /src/",
+      "n_ids": 40,
+      "paper_ok": 35,
+      "paper_failed": 5,
+      "paper_skipped": 0,
+      "wall_seconds": 437.568,
+      "rss_peak_bytes": null,
+      "repeats": 1
+    },
+    {
+      "variant": "D1",
+      "discovery": "OAI-PMH",
+      "download": "HTTP /src/",
+      "n_ids": 40,
+      "paper_ok": 35,
+      "paper_failed": 5,
+      "paper_skipped": 0,
+      "wall_seconds": 554.181,
+      "rss_peak_bytes": null,
+      "repeats": 1
+    }
+  ],
+  "selected_settings": {
+    "batch": {
+      "discovery_batch_size": 20,
+      "setting": "Giữ nguyên Batch lanes"
+    },
+    "bounded": {
+      "discovery_batch_size": 20,
+      "pipeline_max_inflight": 5,
+      "extract_workers": 2,
+      "pipeline_extract_queue": 2,
+      "pipeline_references_queue": 4,
+      "pipeline_prefetch_remaining": 5
+    },
+    "parallel": {
+      "max_workers": 2,
+      "discovery_batch_size": 1
+    }
+  },
+  "phases": [
+    {
+      "key": "pilot40",
+      "title": "Pilot 40 ID",
+      "n_ids": 40,
+      "repeats_per_setting": 5,
+      "source_results": "pilot40_20261031_daa9c9a9/results.json",
+      "runs": [
+        {
+          "run_id": "P40_R1_parallel_16e3dbafb49545acaba31236d8c841b7",
+          "variant": "parallel",
+          "repeat": 1,
+          "settings": {
+            "max_workers": 2
+          },
+          "wall_seconds": 329.813,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50941952,
+          "rss_mean_bytes": 48490336.925358355,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 113.46837919994141,
+          "stages": {
+            "download": 214.11000230014906,
+            "extract": 5.241691099945456,
+            "references": 44.91065439998056,
+            "storage": 2.2683507000037935
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R1_batch_7f88b58117e84a83b8453adb6159f48a",
+          "variant": "batch",
+          "repeat": 1,
+          "settings": {},
+          "wall_seconds": 201.078,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50925568,
+          "rss_mean_bytes": 48426609.1228048,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 10.79573300012271,
+          "stages": {
+            "download": 181.8597692999174,
+            "extract": 5.497052100050496,
+            "references": 49.48298889998114,
+            "storage": 1.6961726000590716
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R1_bounded_4a06fac512ec48bd80f206d6ba4ebe26",
+          "variant": "bounded",
+          "repeat": 1,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 210.109,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 51507200,
+          "rss_mean_bytes": 48854209.32154873,
+          "observed_http_429_attempts": 8,
+          "discovery_seconds": 9.463856299902545,
+          "stages": {
+            "download": 180.07190310009173,
+            "extract": 5.184713700145949,
+            "references": 148.61092279996956,
+            "storage": 1.3692669999727514
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 8
+            },
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R2_parallel_replacement_a06faeec1d7a43a2a64024c1ba0f62e4",
+          "variant": "parallel",
+          "repeat": 2,
+          "settings": {
+            "max_workers": 2
+          },
+          "wall_seconds": 345.828,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50712576,
+          "rss_mean_bytes": 47698537.69240864,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 132.25767289992655,
+          "stages": {
+            "download": 211.8029860999377,
+            "extract": 4.451446999999462,
+            "references": 41.190381600055844,
+            "storage": 1.2575785001099575
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R2_batch_bad38ffb4db0426d9ff869cfeb3c761a",
+          "variant": "batch",
+          "repeat": 2,
+          "settings": {},
+          "wall_seconds": 193.032,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50339840,
+          "rss_mean_bytes": 48205717.07047812,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 10.792005700146547,
+          "stages": {
+            "download": 176.41038559988374,
+            "extract": 4.005845399951795,
+            "references": 44.68252229990321,
+            "storage": 1.1971642999269534
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R2_bounded_528310cf80784313b060dbb284aa7fe9",
+          "variant": "bounded",
+          "repeat": 2,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 191.516,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 51191808,
+          "rss_mean_bytes": 48396770.8374692,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 8.908090700017055,
+          "stages": {
+            "download": 181.77432040011627,
+            "extract": 7.485162900062278,
+            "references": 51.37771540012909,
+            "storage": 2.338436800055206
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R3_batch_5a9962aaa92c409ab8b12f40c0c22681",
+          "variant": "batch",
+          "repeat": 3,
+          "settings": {},
+          "wall_seconds": 197.875,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 49946624,
+          "rss_mean_bytes": 48296493.90647472,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 9.796653099998366,
+          "stages": {
+            "download": 176.81557429986424,
+            "extract": 6.366381999861915,
+            "references": 53.13624920006259,
+            "storage": 2.718962799786823
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R3_bounded_da07537c1d3440279757a7b307e90c28",
+          "variant": "bounded",
+          "repeat": 3,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 191.344,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 51212288,
+          "rss_mean_bytes": 48391285.44717461,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 8.910936600033892,
+          "stages": {
+            "download": 181.61784599989187,
+            "extract": 6.330526499950793,
+            "references": 52.272482699976536,
+            "storage": 1.9190152000810485
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R3_parallel_51df43dd84614322977a4f13c3845b65",
+          "variant": "parallel",
+          "repeat": 3,
+          "settings": {
+            "max_workers": 2
+          },
+          "wall_seconds": 315.625,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50892800,
+          "rss_mean_bytes": 47960684.61872989,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 93.26366689996212,
+          "stages": {
+            "download": 220.5463736001111,
+            "extract": 5.899999600020237,
+            "references": 49.867691700026626,
+            "storage": 1.838104899827158
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R4_parallel_01d1d88f2ad8465da30daff40169257c",
+          "variant": "parallel",
+          "repeat": 4,
+          "settings": {
+            "max_workers": 2
+          },
+          "wall_seconds": 314.422,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50798592,
+          "rss_mean_bytes": 48614495.719908595,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 101.69373990010354,
+          "stages": {
+            "download": 210.96881789993495,
+            "extract": 4.250676000054227,
+            "references": 41.782946499908576,
+            "storage": 1.0962003999447916
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R4_batch_7c6bd81c7fa34a9d9ecd4c0603e6cdc9",
+          "variant": "batch",
+          "repeat": 4,
+          "settings": {},
+          "wall_seconds": 193.609,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 49963008,
+          "rss_mean_bytes": 48272550.40619235,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 9.729395000089426,
+          "stages": {
+            "download": 177.31290559988702,
+            "extract": 4.186898099840619,
+            "references": 48.99729400000069,
+            "storage": 1.2951628000591882
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R4_bounded_94d1fac700dd42e5b912542e54b901f5",
+          "variant": "bounded",
+          "repeat": 4,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 194.125,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 50806784,
+          "rss_mean_bytes": 48218420.549582705,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 8.962747800076613,
+          "stages": {
+            "download": 184.64782929996727,
+            "extract": 4.1748319999314845,
+            "references": 45.133922000124585,
+            "storage": 1.181282900099177
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R5_bounded_74fc97112e3647b38f3a5f89d03fb245",
+          "variant": "bounded",
+          "repeat": 5,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 191.031,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 49586176,
+          "rss_mean_bytes": 47827121.951879025,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 9.108957299991744,
+          "stages": {
+            "download": 181.31856159999734,
+            "extract": 4.055794799962314,
+            "references": 42.01386919998913,
+            "storage": 1.1403668998682406
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R5_batch_72238c07bf434ef3941986238f58fac0",
+          "variant": "batch",
+          "repeat": 5,
+          "settings": {},
+          "wall_seconds": 198.203,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 51474432,
+          "rss_mean_bytes": 48380993.00279781,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 10.01613169995835,
+          "stages": {
+            "download": 182.15551809986937,
+            "extract": 4.0714785000891425,
+            "references": 46.35033970003133,
+            "storage": 1.2088489000161644
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P40_R5_parallel_6ff178aed42043dc89b64344545af335",
+          "variant": "parallel",
+          "repeat": 5,
+          "settings": {
+            "max_workers": 2
+          },
+          "wall_seconds": 318.312,
+          "n_ids": 40,
+          "validated_ok": 38,
+          "paper_status_counts": {
+            "ok": 38,
+            "failed": 2
+          },
+          "rss_peak_bytes": 51023872,
+          "rss_mean_bytes": 48619815.60724776,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 101.25290300007327,
+          "stages": {
+            "download": 215.36081050010398,
+            "extract": 4.342295300011756,
+            "references": 46.15846999982023,
+            "storage": 1.1872983000648674
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "NOT_FOUND",
+              "http_status": 404,
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "input_ids_sha256_lf": "9d94b5d9b7acebb823bb049ef3bcc2dc487e103bbf3818b2c1306706ccd13cac",
+      "source_commits": {
+        "parallel": "dc8239237cad2d086631bfa2b024df05178f8d59",
+        "bounded": "2c7d4c4fca536f6cf634d520f0c976409715bd1f",
+        "batch": "0c7ffe0b5a40073d8c5f5d89d113adbf0f4f64b3"
+      }
+    },
+    {
+      "key": "pilot100_first",
+      "title": "Pilot 100 ID — đợt 1",
+      "n_ids": 100,
+      "repeats_per_setting": 3,
+      "source_results": "pilot100_20261031_c93da5cd/results.json",
+      "runs": [
+        {
+          "run_id": "P100_R1_bounded_ce180b0513cf4046b312a0b3a6c73178",
+          "variant": "bounded",
+          "repeat": 1,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 1786.047,
+          "n_ids": 100,
+          "validated_ok": 89,
+          "paper_status_counts": {
+            "ok": 89,
+            "failed": 11
+          },
+          "rss_peak_bytes": 54407168,
+          "rss_mean_bytes": 50519985.08244651,
+          "observed_http_429_attempts": 37,
+          "discovery_seconds": 21.106607899972005,
+          "stages": {
+            "download": 1761.2641352000064,
+            "extract": 10.785176700126613,
+            "references": 154.68267649994232,
+            "storage": 6.1511590998852625
+          },
+          "observed_request_errors": [
+            {
+              "stage": "download",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 37
+            },
+            {
+              "stage": "download",
+              "error_code": "NETWORK_ERROR",
+              "http_status": null,
+              "count": 70
+            }
+          ]
+        },
+        {
+          "run_id": "P100_R1_batch_6633131f925846d58a4e39d172c0701c",
+          "variant": "batch",
+          "repeat": 1,
+          "settings": {},
+          "wall_seconds": 784.188,
+          "n_ids": 100,
+          "validated_ok": 97,
+          "paper_status_counts": {
+            "ok": 97,
+            "failed": 3
+          },
+          "rss_peak_bytes": 54370304,
+          "rss_mean_bytes": 50094244.17070959,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 24.946564500191016,
+          "stages": {
+            "download": 736.88991120024,
+            "extract": 12.605521000106819,
+            "references": 141.18357939997804,
+            "storage": 4.557933699921705
+          },
+          "observed_request_errors": [
+            {
+              "stage": "download",
+              "error_code": "NETWORK_ERROR",
+              "http_status": null,
+              "count": 20
+            }
+          ]
+        },
+        {
+          "run_id": "P100_R2_batch_a1b8ccf6764544078eaa2497713faa86",
+          "variant": "batch",
+          "repeat": 2,
+          "settings": {},
+          "wall_seconds": 652.734,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53399552,
+          "rss_mean_bytes": 49540352.564198256,
+          "observed_http_429_attempts": 6,
+          "discovery_seconds": 25.139939599990612,
+          "stages": {
+            "download": 552.7949975001102,
+            "extract": 14.570379299868364,
+            "references": 203.6305145000515,
+            "storage": 4.888046400039457
+          },
+          "observed_request_errors": [
+            {
+              "stage": "download",
+              "error_code": "NETWORK_ERROR",
+              "http_status": null,
+              "count": 5
+            },
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 6
+            }
+          ]
+        },
+        {
+          "run_id": "P100_R2_bounded_430f2f49d02e43439444e43e48f3711d",
+          "variant": "bounded",
+          "repeat": 2,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 525.485,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 52490240,
+          "rss_mean_bytes": 49473128.181537256,
+          "observed_http_429_attempts": 3,
+          "discovery_seconds": 22.17121849989053,
+          "stages": {
+            "download": 482.56003729999065,
+            "extract": 13.73962819983717,
+            "references": 195.48771679992205,
+            "storage": 4.614601899840636
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 3
+            }
+          ]
+        },
+        {
+          "run_id": "P100_R3_bounded_9147dada1aac4b8d939f30979f1c6193",
+          "variant": "bounded",
+          "repeat": 3,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 511.781,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53362688,
+          "rss_mean_bytes": 49523021.181291796,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 22.76638480008114,
+          "stages": {
+            "download": 486.9922028000874,
+            "extract": 13.703185299964389,
+            "references": 149.21147829978145,
+            "storage": 4.364479100011522
+          },
+          "observed_request_errors": []
+        },
+        {
+          "run_id": "P100_R3_batch_c17256abd8014edeb2d3ae5c35951744",
+          "variant": "batch",
+          "repeat": 3,
+          "settings": {},
+          "wall_seconds": 507.953,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 52228096,
+          "rss_mean_bytes": 49069302.81723495,
+          "observed_http_429_attempts": 3,
+          "discovery_seconds": 24.984050199971534,
+          "stages": {
+            "download": 452.01177449990064,
+            "extract": 13.689083299774211,
+            "references": 165.64443269994808,
+            "storage": 4.922592699964298
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 3
+            }
+          ]
+        }
+      ],
+      "input_ids_sha256_lf": "f2052c3f8cdab003164c2850eb402906edff63747ec908cc12c0a61325aa6a64",
+      "source_commits": {
+        "bounded": "2c7d4c4fca536f6cf634d520f0c976409715bd1f",
+        "batch": "0c7ffe0b5a40073d8c5f5d89d113adbf0f4f64b3"
+      }
+    },
+    {
+      "key": "pilot100_repeat",
+      "title": "Pilot 100 ID — đợt 2",
+      "n_ids": 100,
+      "repeats_per_setting": 5,
+      "source_results": "pilot100_5_20261031_cb7c7705/results.json",
+      "runs": [
+        {
+          "run_id": "P100X5_R1_batch_dbcad3ba4e1140219604edaae9ead840",
+          "variant": "batch",
+          "repeat": 1,
+          "settings": {},
+          "wall_seconds": 777.203,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53673984,
+          "rss_mean_bytes": 50172132.504851215,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 28.551865600020392,
+          "stages": {
+            "download": 717.536121900077,
+            "extract": 15.733782399620395,
+            "references": 164.19674490002217,
+            "storage": 6.949044000095455
+          },
+          "observed_request_errors": [
+            {
+              "stage": "download",
+              "error_code": "NETWORK_ERROR",
+              "http_status": null,
+              "count": 1
+            }
+          ]
+        },
+        {
+          "run_id": "P100X5_R1_bounded_8714858343474637ac166bb615eee52f",
+          "variant": "bounded",
+          "repeat": 1,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 676.312,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53522432,
+          "rss_mean_bytes": 50256002.711435206,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 19.881702699902235,
+          "stages": {
+            "download": 654.3165925000212,
+            "extract": 12.739507699996466,
+            "references": 155.24119489983423,
+            "storage": 4.285727899812628
+          },
+          "observed_request_errors": []
+        },
+        {
+          "run_id": "P100X5_R2_batch_d616cf78db2e4d14868dfbfc97fa5ce1",
+          "variant": "batch",
+          "repeat": 2,
+          "settings": {},
+          "wall_seconds": 601.125,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53886976,
+          "rss_mean_bytes": 49650289.63842095,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 25.166546400112566,
+          "stages": {
+            "download": 555.1599840000854,
+            "extract": 11.809704799961764,
+            "references": 152.70391179990838,
+            "storage": 4.273981200123671
+          },
+          "observed_request_errors": []
+        },
+        {
+          "run_id": "P100X5_R2_bounded_ebb095fe840f43b4b98c18b6c9aba103",
+          "variant": "bounded",
+          "repeat": 2,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 568.984,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53428224,
+          "rss_mean_bytes": 50307963.466697276,
+          "observed_http_429_attempts": 2,
+          "discovery_seconds": 17.99394859999302,
+          "stages": {
+            "download": 548.4356933000963,
+            "extract": 13.084021200047573,
+            "references": 177.39972999988822,
+            "storage": 4.743966400012141
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "run_id": "P100X5_R3_batch_010f9ea87742438b8434cfd471e12300",
+          "variant": "batch",
+          "repeat": 3,
+          "settings": {},
+          "wall_seconds": 671.75,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53063680,
+          "rss_mean_bytes": 50133054.701263264,
+          "observed_http_429_attempts": 5,
+          "discovery_seconds": 25.99061579996487,
+          "stages": {
+            "download": 562.9943544998532,
+            "extract": 16.83418340003118,
+            "references": 229.26397799979895,
+            "storage": 6.112409600173123
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 5
+            }
+          ]
+        },
+        {
+          "run_id": "P100X5_R3_bounded_439598dc3b7a427186b0f018d130e8dd",
+          "variant": "bounded",
+          "repeat": 3,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 661.781,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53288960,
+          "rss_mean_bytes": 49935745.610440366,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 21.12941320022219,
+          "stages": {
+            "download": 637.7023473998706,
+            "extract": 15.406775300158188,
+            "references": 166.819079399982,
+            "storage": 5.138278800121043
+          },
+          "observed_request_errors": []
+        },
+        {
+          "run_id": "P100X5_R4_bounded_5127b485022c4de0b7253b4a1609a96c",
+          "variant": "bounded",
+          "repeat": 4,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 578.625,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 52895744,
+          "rss_mean_bytes": 50059741.76594069,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 21.663715199800208,
+          "stages": {
+            "download": 554.286555800034,
+            "extract": 14.71128069999395,
+            "references": 167.24958639993565,
+            "storage": 4.83192339996458
+          },
+          "observed_request_errors": []
+        },
+        {
+          "run_id": "P100X5_R4_batch_e3c301d56ba84338ae851fe1c1626946",
+          "variant": "batch",
+          "repeat": 4,
+          "settings": {},
+          "wall_seconds": 622.891,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 54767616,
+          "rss_mean_bytes": 49951796.727373466,
+          "observed_http_429_attempts": 10,
+          "discovery_seconds": 24.856695200083777,
+          "stages": {
+            "download": 481.89192060017376,
+            "extract": 15.751884299999801,
+            "references": 266.7826992000337,
+            "storage": 5.866849000187358
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 10
+            }
+          ]
+        },
+        {
+          "run_id": "P100X5_R5_bounded_92c814b672b54057aa1598e8e92574fd",
+          "variant": "bounded",
+          "repeat": 5,
+          "settings": {
+            "pipeline_max_inflight": 5,
+            "pipeline_extract_worker": 2
+          },
+          "wall_seconds": 567.515,
+          "n_ids": 100,
+          "validated_ok": 100,
+          "paper_status_counts": {
+            "ok": 100
+          },
+          "rss_peak_bytes": 53686272,
+          "rss_mean_bytes": 49841430.18627243,
+          "observed_http_429_attempts": 0,
+          "discovery_seconds": 20.510055900143925,
+          "stages": {
+            "download": 544.5231057000929,
+            "extract": 14.52377920015715,
+            "references": 159.12899640010437,
+            "storage": 4.981002499931492
+          },
+          "observed_request_errors": []
+        },
+        {
+          "run_id": "P100X5_R5_batch_a05f6154d8184af595d381ae32f44822",
+          "variant": "batch",
+          "repeat": 5,
+          "settings": {},
+          "wall_seconds": 647.266,
+          "n_ids": 100,
+          "validated_ok": 99,
+          "paper_status_counts": {
+            "ok": 99,
+            "failed": 1
+          },
+          "rss_peak_bytes": 52805632,
+          "rss_mean_bytes": 49909232.65426162,
+          "observed_http_429_attempts": 1,
+          "discovery_seconds": 25.143606000056025,
+          "stages": {
+            "download": 586.4773384997388,
+            "extract": 17.025949300383218,
+            "references": 182.5487112000701,
+            "storage": 5.696131800068542
+          },
+          "observed_request_errors": [
+            {
+              "stage": "references",
+              "error_code": "HTTP_429",
+              "http_status": 429,
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "input_ids_sha256_lf": "f2052c3f8cdab003164c2850eb402906edff63747ec908cc12c0a61325aa6a64",
+      "source_commits": {
+        "bounded": "2c7d4c4fca536f6cf634d520f0c976409715bd1f",
+        "batch": "0c7ffe0b5a40073d8c5f5d89d113adbf0f4f64b3"
+      }
+    }
+  ]
+}

@@ -33,7 +33,7 @@ Hệ thống gửi yêu cầu tới arXiv API theo từng batch. Danh sách ID �
 
 Đối với các arXiv ID dạng mới, hệ thống có thể gom những phiên bản trung gian vào các truy vấn theo batch để lấy ngày cập nhật. Ngày cập nhật của phiên bản mới nhất được lấy trực tiếp từ kết quả Discovery ban đầu.
 
-Trong trường hợp truy vấn lịch sử phiên bản không thành công hoặc không trả về đầy đủ dữ liệu, hệ thống sử dụng cơ chế dự phòng (fallback), bao gồm truy vấn riêng từng bài báo hoặc phân tích thông tin Submission history trên trang abstract của arXiv. Nếu không thể thu thập đầy đủ ngày sửa đổi nhưng vẫn xác định được danh sách phiên bản, bài báo vẫn có thể được tiếp tục xử lý. Khi đó, revised_dates được để là null và thông tin cảnh báo được ghi vào nhật ký.
+Trong trường hợp truy vấn lịch sử phiên bản không thành công hoặc không trả về đầy đủ dữ liệu, hệ thống sử dụng cơ chế dự phòng (fallback), bao gồm truy vấn riêng từng bài báo. Nếu không thể thu thập đầy đủ ngày sửa đổi nhưng vẫn xác định được danh sách phiên bản, bài báo vẫn có thể được tiếp tục xử lý. Khi đó, revised_dates được để là null và thông tin cảnh báo được ghi vào nhật ký.
 
 
 ## 3.2. Download (Tải mã nguồn và tầng HTTP — Hương phụ trách)
@@ -178,7 +178,7 @@ Tập `.tex`/`.bib`, đường dẫn tương đối và danh sách tệp theo ph
 
 ---
 
-## 3.4. References (Thu thập trích dẫn Semantic Scholar — Châu phụ trách)
+## 3.4. References (Thu thập trích dẫn Semantic Scholar)
 
 Giai đoạn References sử dụng Semantic Scholar Academic Graph API để thu thập danh sách các tài liệu khoa học được một bài báo trích dẫn. Đầu vào của giai đoạn này là mã định danh arXiv của bài báo nguồn. Đầu ra là danh sách các tài liệu được bài báo đó trích dẫn, cùng những thông tin mô tả như tiêu đề, tác giả và mã định danh.
 
@@ -197,14 +197,26 @@ Dữ liệu nhận được từ Semantic Scholar được chuyển đổi về 
 | `ref_arxiv_id` | Mã arXiv của tài liệu được trích dẫn, nếu xác định được |
 | `ref_title` | Tiêu đề tài liệu được trích dẫn |
 | `ref_authors` | Danh sách tác giả của tài liệu được trích dẫn |
-| `ref_submission_date` | Ngày nộp của tài liệu được trích dẫn |
-| `ref_s2_id` | Mã Semantic Scholar của tài liệu được trích dẫn |
+| `ref_submission_date` | Ngày xuất bản của tài liệu được trích dẫn, lấy từ trường `publicationDate` của Semantic Scholar |
+
 
 Trong quá trình chuẩn hóa, hệ thống lấy ref_arxiv_id từ trường externalIds.ArXiv. Nếu Semantic Scholar không cung cấp mã arXiv, giá trị này được lưu là null thay vì loại bỏ toàn bộ reference. Việc giữ lại các references không có arXiv ID giúp hạn chế mất dữ liệu và tạo điều kiện sử dụng các thuộc tính khác, chẳng hạn tiêu đề, tác giả hoặc Semantic Scholar ID, cho các bước đối sánh sau này. Nếu một mục trích dẫn không có đối tượng citedPaper, hệ thống bỏ qua mục đó vì không có đủ đối tượng dữ liệu để chuẩn hóa.
 
-Đối với ref_submission_date, implementation hiện tại chưa thu thập trường này từ API nên giá trị được để là null. Đây là một giới hạn của dữ liệu References tại thời điểm triển khai.
-
 Ngoài ra, Semantic Scholar trả về danh sách tài liệu tham khảo ở mức bài báo; hệ thống hiện chưa phân biệt danh sách references riêng cho từng phiên bản v1, v2, ... của cùng một bài báo arXiv.
+
+Kết quả thu thập References được lưu vào tệp `references.json` trong thư mục dữ liệu của từng bài báo. Mỗi tệp bao gồm mã arXiv của bài báo nguồn, trạng thái thu thập, mã lỗi (nếu có), nguồn dữ liệu, thời điểm thu thập và danh sách references đã chuẩn hóa.
+
+Các trạng thái được sử dụng gồm:
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `ok` | API trả về references và quá trình thu thập hoàn tất |
+| `empty` | API không trả về tài liệu tham khảo |
+| `failed` | Quá trình thu thập thất bại |
+
+Dữ liệu được ghi dưới định dạng JSON để giữ nguyên cấu trúc danh sách và các trường có thể thiếu giá trị. Đồng thời, sự kiện của giai đoạn References được ghi vào `events.jsonl`, phục vụ việc theo dõi tiến độ, kiểm tra lỗi và đánh giá kết quả thu thập.
+
+Sau khi cả Extract và References kết thúc, Storage/Validation kiểm tra dữ liệu của bài báo trước khi ghi nhận trạng thái hoàn tất.
 
 Đối với Semantic Scholar API có thể giới hạn tần suất truy cập. Do đó, giữa các yêu cầu gửi được cách nhau tối thiểu 3 giây. Nếu gặp các lỗi HTTP có thể thử lại. Khi phản hồi có header Retry-After, hệ thống ưu tiên thời gian chờ do máy chủ cung cấp. Trong các trường hợp khác, thời gian chờ giữa những lần thử lại được tính theo exponential backoff
 

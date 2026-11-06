@@ -65,7 +65,7 @@ $$\text{https://export.arxiv.org/src/}\{arxiv\_id\}\text{v}\{version\}$$
 
 ---
 
-## 3.4. References (Thu thập trích dẫn Semantic Scholar — Châu phụ trách)
+## 3.4. References (Thu thập trích dẫn Semantic Scholar)
 
 Giai đoạn References sử dụng Semantic Scholar Academic Graph API để thu thập danh sách các tài liệu khoa học được một bài báo trích dẫn. Đầu vào của giai đoạn này là mã định danh arXiv của bài báo nguồn. Đầu ra là danh sách các tài liệu được bài báo đó trích dẫn, cùng những thông tin mô tả như tiêu đề, tác giả và mã định danh.
 

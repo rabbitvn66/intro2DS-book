@@ -1,12 +1,12 @@
 version: 1
 project:
-  title: arXiv Project — Nhóm 08
+  title: arXiv Project — Nhóm 5
   subtitle: Introduction to Data Science — Milestone 1 và 2
   authors:
-    - name: Nguyễn Lưu Hương
-    - name: Lê Thị Thùy Linh
-    - name: Trần Bảo Châu
-    - name: Nguyễn Thị Thu Hiền
+    - name: 24120027 - Lý Ngọc Châu
+    - name: 24120046 - Nguyễn Hà Minh Hiền
+    - name: 24120058 - Nguyễn Lưu Hương
+    - name: 24120085 - Lê Nguyễn Thuỳ Linh
   github: https://github.com/qaztyhn/intro2DS
   toc:
     - file: index.md

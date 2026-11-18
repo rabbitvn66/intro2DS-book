@@ -11,10 +11,6 @@ kernelspec:
   display_name: Python 3
 ---
 
-:::{note} Phụ trách: Hiền
-Dữ liệu và đồ thị trong trang này được tính toán tự động khi biên dịch sách từ các tệp tóm tắt trong `data/`.
-:::
-
 # 5. Kết quả thu thập dữ liệu
 
 ```{code-cell} python
@@ -62,14 +58,13 @@ if bd.need_data() and len(bd.papers):
 
 ## 5.3. Kích thước trước và sau khi loại bỏ hình ảnh
 
-Việc loại bỏ các tệp nhị phân/hình ảnh và chỉ giữ lại `.tex`/`.bib` giúp giảm đáng kể dung lượng lưu trữ trên đĩa:
+Việc loại bỏ các tệp nhị phân/hình ảnh và chỉ giữ lại `.tex`/`.bib` giúp giảm đáng kể dung lượng lưu trữ. Kích thước giữ lại được tính trực tiếp từ dung lượng `.tex`/`.bib` trong snapshot M1; kích thước trước lọc lấy từ tổng dung lượng nội dung giải nén được ghi trong inventory.
 
 ```{code-cell} python
 :tags: [remove-input]
-if bd.need_data() and len(bd.versions):
-    v = bd.versions[bd.versions["extract_status"] == "ok"]
-    raw_mb = v["unpacked_total_bytes"].sum() / (1024 * 1024)
-    kept_mb = v["kept_source_bytes"].sum() / (1024 * 1024)
+if len(bd.m1_size_summary):
+    raw_mb = bd.m1_size_summary["raw_bytes"].sum() / (1024 * 1024)
+    kept_mb = bd.m1_size_summary["kept_tex_bib_bytes"].sum() / (1024 * 1024)
     ratio = kept_mb / raw_mb if raw_mb > 0 else 0
     df = pd.DataFrame({
         "Trạng thái": ["Trước khi lọc (tổng giải nén)", "Sau khi lọc (chỉ .tex/.bib)"],
@@ -83,13 +78,69 @@ if bd.need_data() and len(bd.versions):
 
 ```{code-cell} python
 :tags: [remove-input]
-if bd.need_data():
-    r = bd.refs
-    n_papers = bd.papers["arxiv_id"].nunique()
-    total_refs = len(r)
-    with_arxiv = r["ref_arxiv_id"].notna().sum()
+if len(bd.m1_member_summary):
+    s = bd.m1_member_summary
+    n_papers = s["observed_publications"].sum()
+    total_refs = s["references_total"].sum()
+    with_arxiv = s["references_with_arxiv_id"].sum()
+    with_date = s["references_with_date"].sum()
     print(f"Tổng số references thu thập: {total_refs}")
     print(f"Trung bình references / bài: {total_refs / n_papers:.1f}" if n_papers else "Chưa có bài")
     print(f"Số references có arXiv ID: {with_arxiv} ({with_arxiv / total_refs:.1%})" if total_refs else "Chưa có references")
+    print(f"Số references có ngày S2: {with_date} ({with_date / total_refs:.1%})" if total_refs else "Chưa có references")
+```
+
+## 5.5. Tổng hợp bốn thành viên
+
+Tổng hợp dưới đây chỉ dùng dữ liệu inventory của M1: số bài quan sát được,
+trạng thái metadata và references. Dữ liệu kiểm định validation không được
+tính trong trang này. `references_with_date` là số reference có
+`ref_submission_date` từ dữ liệu S2, không phải ngày nộp bài trên arXiv.
+
+```{code-cell} python
+:tags: [remove-input]
+if len(bd.m1_member_summary):
+    member_names = {
+        "24120027": "Lý Ngọc Châu",
+        "24120046": "Nguyễn Hà Minh Hiền",
+        "24120058": "Nguyễn Lưu Hương",
+        "24120085": "Lê Nguyễn Thùy Linh",
+    }
+    summary = bd.m1_member_summary.copy()
+    summary["member"] = summary["member"].astype(str)
+    summary["Thành viên"] = summary["member"].map(member_names).fillna(summary["member"])
+
+    coverage = summary[[
+        "Thành viên", "member", "expected_publications",
+        "observed_publications", "missing_ids", "metadata_ok", "metadata_unknown",
+    ]].rename(columns={
+        "member": "MSSV",
+        "expected_publications": "ID dự kiến",
+        "observed_publications": "ID quan sát",
+        "missing_ids": "Thiếu",
+        "metadata_ok": "Metadata OK",
+        "metadata_unknown": "Metadata chưa rõ",
+    })
+
+    references = summary[[
+        "Thành viên", "references_ok", "references_empty",
+        "references_failed", "references_unknown", "references_total",
+        "references_with_date", "references_with_arxiv_id",
+    ]].rename(columns={
+        "references_ok": "References OK",
+        "references_empty": "Không có citation",
+        "references_failed": "References lỗi",
+        "references_unknown": "References chưa rõ",
+        "references_total": "Tổng references",
+        "references_with_date": "Có ngày S2",
+        "references_with_arxiv_id": "Có arXiv ID",
+    })
+
+    display(coverage.style.hide(axis="index").format(
+        {"ID dự kiến": "{:,.0f}", "ID quan sát": "{:,.0f}",
+         "Thiếu": "{:,.0f}", "Metadata OK": "{:,.0f}",
+         "Metadata chưa rõ": "{:,.0f}"}))
+    display(references.style.hide(axis="index").format(
+        {column: "{:,.0f}" for column in references.columns if column != "Thành viên"}))
 ```
 

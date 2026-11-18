@@ -1,0 +1,12 @@
+{
+  "source": "D:\\intro2DS\\m1-m2_report\\accumulated\\M1_REPORT.json",
+  "source_sha256": "d3a91d0c8ed0d91438f9d4569070445bbf123ba5181a272f69bdd0f50d7c2280",
+  "generated_from": "M1_REPORT.json by_member",
+  "definitions": {
+    "recorded_validation_status": "Stored M1 validation.json; unknown is not failed or successful.",
+    "references_with_date": "Nonempty ref_submission_date, as supplied. No new S2 lookup.",
+    "retry_statistics": "Separate immutable snapshot inventory and audit_records.jsonl.gz; missing logs imply unknown.",
+    "time_and_resources": "Not aggregated in this intake."
+  },
+  "generated_utc": "2026-11-18T00:00:00Z"
+}

@@ -1,0 +1,5 @@
+member,expected_publications,observed_publications,missing_ids,versions,metadata_ok,metadata_unknown,validation_ok,validation_failed,validation_unknown,download_ok,download_failed,download_unknown,extract_ok,extract_empty,extract_failed,extract_pending,references_ok,references_empty,references_failed,references_unknown,references_total,references_with_date,references_with_arxiv_id,m2_artifact_publications
+24120027,5000,5000,0,7915,5000,0,4953,47,0,7874,41,0,7345,529,0,41,4736,259,5,0,206732,165711,96161,4961
+24120046,5000,5000,0,7819,5000,0,4609,391,0,7784,35,0,7314,465,5,35,4376,270,354,0,192677,155418,89353,4963
+24120058,5000,5000,0,8123,4996,4,4084,913,3,8086,36,1,7576,510,0,36,4021,192,782,5,177270,138248,84512,4958
+24120085,5000,5000,0,8780,5000,0,0,0,5000,8750,30,0,8326,423,1,30,4760,240,0,0,227337,183405,121475,4973

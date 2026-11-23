@@ -11,10 +11,6 @@ kernelspec:
   display_name: Python 3
 ---
 
-:::{note} Phụ trách: Hiền
-Dữ liệu và đồ thị trong trang này được tính toán tự động khi biên dịch sách từ các tệp tóm tắt trong `data/`.
-:::
-
 # 5. Kết quả thu thập dữ liệu
 
 ```{code-cell} python
@@ -28,68 +24,127 @@ import pandas as pd
 import matplotlib.pyplot as plt
 ```
 
-## 5.1. Số bài thành công và Tỉ lệ thành công
+Các bảng dưới đây được tính từ snapshot corpus M1 của bốn thành viên.
+Benchmark Colab 5.000 bài được trình bày ở mục 5.5.
 
-Một bài viết được coi là **thành công** khi metadata đạt trạng thái `ok` và không có phiên bản nào bị `failed` (các phiên bản không có TeX được ghi nhận là `empty`, không tính là lỗi).
+## 5.1. Số bài và tỷ lệ thành công
+
+Bài thành công khi metadata `ok`, có đủ phiên bản và mọi phiên bản đều tải `ok`,
+trích xuất `ok` hoặc `empty`. Bản không có TeX vẫn giữ bản ghi rỗng theo đề.
+Trạng thái `pending` hoặc chưa rõ không tính thành công. References đánh giá riêng.
 
 ```{code-cell} python
 :tags: [remove-input]
 if bd.need_data():
-    succ = bd.paper_success()
-    total = len(succ)
-    ok_count = int(succ["success"].sum())
-    rate = ok_count / total if total > 0 else 0
-    print(f"Tổng số bài crawl: {total}")
-    print(f"Số bài thành công: {ok_count} ({rate:.1%})")
+    versions = bd.versions.copy()
+    versions["complete"] = (versions["download_status"].eq("ok")
+                            & versions["extract_status"].isin(["ok", "empty"]))
+    status = versions.groupby(["member", "arxiv_id"]).agg(
+        complete=("complete", "all"), observed_versions=("version", "nunique")
+    ).reset_index()
+    papers = bd.papers.merge(status, on=["member", "arxiv_id"],
+                             how="left", validate="one_to_one")
+    papers["success"] = (papers["metadata_status"].eq("ok")
+                         & papers["complete"].eq(True)
+                         & papers["observed_versions"].eq(papers["latest_version"]))
+    coverage = papers.groupby("member").agg(
+        collected=("arxiv_id", "size"), successful=("success", "sum"))
+    coverage.loc["Tổng"] = coverage.sum()
+    coverage["Tỷ lệ thành công"] = coverage["successful"] / coverage["collected"]
+    display(coverage.rename(columns={"collected": "Số bài", "successful": "Thành công"})
+            .rename_axis("MSSV").style.format({"Số bài": "{:,.0f}",
+            "Thành công": "{:,.0f}", "Tỷ lệ thành công": "{:.2%}"}))
 ```
 
 ## 5.2. Phân bố số phiên bản
 
-Đa số bài báo trên arXiv có 1 đến 2 phiên bản; một số ít bài có số lượng bản cập nhật lớn hơn.
-
 ```{code-cell} python
 :tags: [remove-input]
-if bd.need_data() and len(bd.papers):
+if bd.need_data():
     counts = bd.papers["latest_version"].value_counts().sort_index()
     ax = counts.plot.bar(figsize=(7, 3.5), color="#4C72B0")
-    ax.set(xlabel="Số phiên bản (latest version)", ylabel="Số lượng bài",
-           title="Phân bố số lượng phiên bản của các bài báo")
-    for i, v in enumerate(counts):
-        ax.text(i, v + 0.5, str(v), ha="center", va="bottom", fontsize=8)
+    ax.set(xlabel="Số phiên bản", ylabel="Số bài", title="Phân bố số phiên bản corpus M1")
+    for i, value in enumerate(counts):
+        ax.text(i, value, str(value), ha="center", va="bottom", fontsize=8)
     plt.tight_layout()
     plt.show()
 ```
 
-## 5.3. Kích thước trước và sau khi loại bỏ hình ảnh
+## 5.3. Kích thước trung bình trước và sau lọc
 
-Việc loại bỏ các tệp nhị phân/hình ảnh và chỉ giữ lại `.tex`/`.bib` giúp giảm đáng kể dung lượng lưu trữ trên đĩa:
+Kích thước mỗi bài cộng tất cả phiên bản rồi chia cho số bài quan sát, kể cả bài
+có bản ghi rỗng. Trước lọc là byte giải nén inventory ghi nhận; sau lọc là byte
+`.tex`/`.bib` thực giữ lại. Chênh lệch gồm hình ảnh và các loại tệp khác bị loại.
 
 ```{code-cell} python
 :tags: [remove-input]
-if bd.need_data() and len(bd.versions):
-    v = bd.versions[bd.versions["extract_status"] == "ok"]
-    raw_mb = v["unpacked_total_bytes"].sum() / (1024 * 1024)
-    kept_mb = v["kept_source_bytes"].sum() / (1024 * 1024)
-    ratio = kept_mb / raw_mb if raw_mb > 0 else 0
-    df = pd.DataFrame({
-        "Trạng thái": ["Trước khi lọc (tổng giải nén)", "Sau khi lọc (chỉ .tex/.bib)"],
-        "Dung lượng (MB)": [round(raw_mb, 2), round(kept_mb, 2)]
+if len(bd.m1_size_summary) and len(bd.m1_member_summary):
+    sizes = bd.m1_size_summary.merge(
+        bd.m1_member_summary[["member", "observed_publications"]],
+        on="member", validate="one_to_one").set_index("member")
+    sizes.loc["Tổng"] = sizes.sum()
+    table = pd.DataFrame({
+        "Trước lọc (byte/bài)": sizes["raw_bytes"] / sizes["observed_publications"],
+        "Sau lọc (byte/bài)": sizes["kept_tex_bib_bytes"] / sizes["observed_publications"],
+        "Giảm dung lượng": 1 - sizes["kept_tex_bib_bytes"] / sizes["raw_bytes"]})
+    display(table.rename_axis("MSSV").style.format({
+        "Trước lọc (byte/bài)": "{:,.2f}", "Sau lọc (byte/bài)": "{:,.2f}",
+        "Giảm dung lượng": "{:.2%}"}))
+```
+
+## 5.4. Thu thập metadata references
+
+References trung bình bằng tổng references chia tổng số bài, bao gồm bài không có
+references hoặc thu thập lỗi. Tỷ lệ hoàn tất truy vấn metadata theo bài bằng
+`(references_ok + references_empty) / số bài`. `empty` nghĩa là truy vấn không trả
+về references; lỗi hoặc chưa rõ không tính thành công. Chỉ số này không đo độ đầy
+đủ của từng trường metadata.
+
+```{code-cell} python
+:tags: [remove-input]
+if len(bd.m1_member_summary):
+    refs = bd.m1_member_summary.set_index("member")[[
+        "observed_publications", "references_total", "references_ok", "references_empty"]].copy()
+    refs.loc["Tổng"] = refs.sum()
+    table = pd.DataFrame({
+        "Tổng references": refs["references_total"],
+        "References/bài": refs["references_total"] / refs["observed_publications"],
+        "Tỷ lệ lấy metadata": (refs["references_ok"] + refs["references_empty"])
+                                / refs["observed_publications"]})
+    display(table.rename_axis("MSSV").style.format({"Tổng references": "{:,.0f}",
+        "References/bài": "{:.2f}", "Tỷ lệ lấy metadata": "{:.2%}"}))
+```
+
+## 5.5. Benchmark thực tế 5.000 bài
+
+Mỗi thành viên chạy cấu hình A_PIPELINE trên Colab với 5.000 bài trong range được phân công.
+Số liệu thời gian và RAM từ các report được lưu trong `data/m1_colab_time_ram.json`.
+
+```{code-cell} python
+:tags: [remove-input]
+import json
+benchmark = json.loads((bd.DATA / "m1_colab_time_ram.json").read_text(encoding="utf-8"))
+mib = 1024 ** 2
+metrics = []
+for run in benchmark["runs"]:
+    seconds = run["checkpointed_wall_seconds_sum"]
+    metrics.append({
+        "MSSV": run["member"],
+        "Tổng thời gian (giây)": seconds,
+        "Tổng thời gian (giờ)": seconds / 3600,
+        "Trung bình (giây/bài)": seconds / run["input_count"],
+        "RAM RSS cực đại (MiB)": run["rss_peak_bytes"] / mib,
+        "RAM RSS TB có trọng số (MiB)": run["rss_mean_bytes_weighted"] / mib,
     })
-    display(df)
-    print(f"-> Dung lượng giữ lại chỉ chiếm khoảng {ratio:.1%} so với dung lượng thô ban đầu.")
+table = pd.DataFrame(metrics)
+display(table.style.hide(axis="index").format({
+    column: "{:,.2f}" for column in table.columns if column != "MSSV"
+}))
 ```
 
-## 5.4. Thống kê Trích dẫn (References)
-
-```{code-cell} python
-:tags: [remove-input]
-if bd.need_data():
-    r = bd.refs
-    n_papers = bd.papers["arxiv_id"].nunique()
-    total_refs = len(r)
-    with_arxiv = r["ref_arxiv_id"].notna().sum()
-    print(f"Tổng số references thu thập: {total_refs}")
-    print(f"Trung bình references / bài: {total_refs / n_papers:.1f}" if n_papers else "Chưa có bài")
-    print(f"Số references có arXiv ID: {with_arxiv} ({with_arxiv / total_refs:.1%})" if total_refs else "Chưa có references")
-```
-
+Đây là benchmark tổng hợp theo cơ chế streaming/discard: mỗi batch dùng một
+`run_id` riêng với cache lạnh; dữ liệu bài chỉ được xóa sau khi metrics và report
+của batch đã lưu vào Drive. Tổng thời gian là tổng wall time đã checkpoint,
+**không gồm** các lượt bị ngắt chưa commit và thời gian runtime ngừng hoạt động.
+Trung bình/bài được tính bằng tổng này chia 5.000, không phải độ trễ đo riêng
+của từng bài. RAM là RSS theo các trường peak và trung bình có trọng số trong report.

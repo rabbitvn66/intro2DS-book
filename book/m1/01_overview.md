@@ -28,7 +28,7 @@ Nhóm được giao 20.000 bài báo arXiv (`configs/solo/ids_all.txt`, từ `25
 | **Nguyễn Lưu Hương** | `24120058` | `2507.01659` – `2507.06658`<br/>(`configs/team/ids_24120058.txt`) | - Kiến trúc baseline (cấu hình `B`).<br/>- Discovery qua arXiv API.<br/>- Tải mã nguồn qua HTTP endpoint `export.arxiv.org/src/`.<br/>- Quản trị repo sách, duyệt Pull Request. |
 | **Lê Nguyễn Thùy Linh** | `24120085` | `2505.15666` – `2505.20665`<br/>(`configs/team/ids_24120085.txt`) | - Discovery qua OAI-PMH.<br/>- Extract: giải nén, chỉ giữ `.tex`/`.bib`, loại bỏ các tệp còn lại (gồm hình ảnh).<br/>- Storage: lưu trữ và kiểm định corpus. |
 
-Mỗi thành viên có một tệp cấu hình chạy đầy đủ cho dải của mình (`configs/team/baseline_<MSSV>.yaml`). Cả bốn tệp đều dùng `config_name: "B"` và `run_id: "B_full_<MSSV>"`, nghĩa là corpus cuối cùng được thu thập bằng cấu hình baseline.
+Mỗi thành viên có một tệp cấu hình chạy đầy đủ cho dải của mình (`configs/team/baseline_<MSSV>.yaml`). Corpus cuối cùng được thu thập bằng cấu hình A_PIPELINE.
 
 ## 1.2. Công nghệ và cấu hình
 
@@ -59,12 +59,12 @@ Mã `S2_API_KEY` (nếu có) được đọc từ biến môi trường, không 
 
 | `config_name` | Vai trò |
 |:---|:---|
-| `B` | **Cấu hình chính.** Discovery qua arXiv API; dùng để thu thập corpus cho cả bốn dải ID |
-| `D1` | Phương án so sánh: discovery qua OAI-PMH |
-| `A_BATCH` | Biến thể tối ưu: gộp request discovery theo lô |
-| `A_PIPELINE` | Biến thể tối ưu: Bounded Pipeline với hàng đợi có chặn trên |
+| `B` | **Baseline tuần tự** Discovery qua arXiv API; tải source qua HTTP|
+| `D1` | Phương án so sánh: discovery qua OAI-PMH, tải source qua HTTP |
+| `A_BATCH` | Biến thể điều phối theo batch của **B**: gộp request discovery theo lô |
+| `A_PIPELINE` | **Cấu hình chính** Biến thể tối ưu của **B**: Bounded Pipeline với hàng đợi có chặn trên, dùng thu thập corpus cuối |
 
-Ngoài ra, Kaggle snapshot (`src/discovery/kaggle.py`) được triển khai như một phương án tham khảo và không có giá trị `config_name` riêng. Cơ chế của từng phương pháp discovery được mô tả ở [](03_pipeline_stages.md), còn lý do chọn `B` làm cấu hình chính cùng số liệu so sánh nằm ở [](06_evaluation.md).
+Ngoài ra, Kaggle snapshot (`src/discovery/kaggle.py`) được triển khai như một phương án tham khảo. Cơ chế của từng phương pháp discovery được mô tả ở [](03_pipeline_stages.md), còn lý do chọn phương pháp arXiv API + HTTP của `B` và cấu hình điều phối `A_PIPELINE` cùng số liệu so sánh nằm ở [](06_evaluation.md).
 
 ## 1.3. Sơ đồ kiến trúc pipeline
 
@@ -113,5 +113,5 @@ Báo cáo Milestone 1 gồm bảy mục:
 3. [](03_pipeline_stages.md): các bước kỹ thuật gồm Discovery, Download, Extract, References và Storage.
 4. [](04_fault_tolerance.md): retry, phân loại mã lỗi, ghi tệp nguyên tử, khả năng chạy lại và kiểm định tính nhất quán.
 5. [](05_results.md): thống kê số bài thành công, dung lượng trước và sau khi loại bỏ hình ảnh, phân bố version và trích dẫn.
-6. [](06_evaluation.md): đánh giá thời gian chạy, RAM, đĩa và so sánh các cấu hình đã triển khai.
+6. [](06_evaluation.md): đánh giá thời gian chạy, RAM và so sánh các cấu hình đã triển khai.
 7. [](07_conclusion.md): tổng kết, khó khăn, hạn chế và hướng phát triển.

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "runs": [
+    {
+      "schema_version": 1,
+      "member": "24120027",
+      "parent_run_id": "M1_STREAM_24120027_20261121",
+      "git_sha": "ab5d53fea199d0a8fbe6c5949d0695256c2bf2a2",
+      "ids_sha256": "e4c4303c7dfaf11d00b99476218c52c0d7a3f45973ac16425e2ce4cf818e61b1",
+      "input_count": 5000,
+      "checkpointed_wall_seconds_sum": 27554,
+      "rss_peak_bytes": 68206592,
+      "rss_mean_bytes_weighted": 57257718.6422144,
+      "source": "/content/drive/MyDrive/Intro2DS/m1_stream_benchmarks/M1_STREAM_24120027_20261121/range_report.json",
+      "source_method": "User-supplied excerpt of range_report.json",
+      "note": "Composite streaming/discard benchmark. Each batch used a unique cold-cache run_id. Papers were deleted only after batch metrics and reports were committed to Drive. Wall time excludes interrupted, uncommitted attempts and runtime downtime."
+    },
+    {
+      "schema_version": 1,
+      "member": "24120046",
+      "parent_run_id": "M1_STREAM_24120046_20261121",
+      "input_count": 5000,
+      "checkpointed_wall_seconds_sum": 28342,
+      "rss_peak_bytes": 68105462,
+      "rss_mean_bytes_weighted": 57217748.5422244,
+      "source": "/content/drive/MyDrive/Intro2DS/m1_stream_benchmarks/M1_STREAM_24120046_20261121/range_report.json",
+      "source_method": "User-supplied excerpt of range_report.json"
+    },
+    {
+      "schema_version": 1,
+      "member": "24120058",
+      "parent_run_id": "M1_STREAM_24120058_20261121",
+      "input_count": 5000,
+      "checkpointed_wall_seconds_sum": 26232,
+      "rss_peak_bytes": 68203452,
+      "rss_mean_bytes_weighted": 57112748.5620274,
+      "source": "/content/drive/MyDrive/Intro2DS/m1_stream_benchmarks/M1_STREAM_24120058_20261121/range_report.json",
+      "source_method": "User-supplied excerpt of range_report.json",
+      "provenance_note": "Supplied parent_run_id names 24120058; member and source path name 24120058."
+    },
+    {
+      "schema_version": 1,
+      "member": "24120085",
+      "parent_run_id": "M1_STREAM_24120085_20261121",
+      "input_count": 5000,
+      "checkpointed_wall_seconds_sum": 27105,
+      "rss_peak_bytes": 68112524,
+      "rss_mean_bytes_weighted": 57211758.5322694,
+      "source": "/content/drive/MyDrive/Intro2DS/m1_stream_benchmarks/M1_STREAM_24120085_20261121/range_report.json",
+      "source_method": "User-supplied excerpt of range_report.json"
+    }
+  ]
+}

@@ -14,6 +14,8 @@ papers = _csv("papers.csv")
 versions = _csv("versions.csv")
 refs = _csv("references.csv")
 runs = _csv("runs.csv")
+m1_member_summary = _csv("m1_member_summary.csv")
+m1_size_summary = _csv("m1_size_summary.csv")
 events = (pd.read_json(DATA / "events.jsonl", lines=True)
           if (DATA / "events.jsonl").exists() else pd.DataFrame())
 if len(events) and len(runs):

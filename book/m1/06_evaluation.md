@@ -189,7 +189,7 @@ Các setting trên là kết quả đã chọn sau khảo sát nhiều giá tr�
 
 **Quy tắc đo:** cùng tập ID và thứ tự trong từng đợt; cold application cache, output/run ID riêng; cùng pacing/retry và chế độ references không API key. Các run chạy tuần tự, xáo thứ tự cấu hình theo vòng; không loại run chậm hoặc paper lỗi. RAM là RSS của cây tiến trình do ResourceMonitor đo; mỗi thanh RAM là trung bình đỉnh của các run, không phải một đỉnh toàn bộ các lần chạy.
 
-Các bảng dùng trung bình và **độ lệch chuẩn mẫu (SD)** qua các run, không phải sai số chuẩn. Thành công trong pilot là validation đạt; một run `completed` vẫn có thể chứa paper thất bại. Với n ID/run và k lần lặp, mẫu số tỷ lệ là n × k lượt paper, không phải số paper duy nhất.
+Các bảng dùng trung bình và **độ lệch chuẩn mẫu (SD)** qua các run, không phải sai số chuẩn. Thành công trong pilot là validation đạt; khác tiêu chí hoàn tất metadata/source ở mục 5.1. Với n ID/run và k lần lặp, mẫu số tỷ lệ là n × k lượt paper, không phải số paper duy nhất.
 
 ## 6.3. Kiểm chứng ba cấu hình đã chốt
 

@@ -2,7 +2,7 @@
 title: Tổng quan
 ---
 
-# arXiv Project — Nhóm 08 (intro2DS)
+# arXiv Project — Nhóm 5 (intro2DS)
 
 Báo cáo Jupyter Book cho đồ án môn học **Nhập môn Khoa học Dữ liệu** (Introduction to Data Science). Toàn bộ nội dung sách được cập nhật và mở rộng xuyên suốt các mốc Milestone của đồ án.
 

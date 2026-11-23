@@ -25,4 +25,4 @@ project:
     #     - file: m2/index.md
 site:
   template: book-theme
-  title: arXiv Project — Nhóm 08
+  title: arXiv Project — Nhóm 5

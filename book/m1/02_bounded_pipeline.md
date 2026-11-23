@@ -108,7 +108,7 @@ Bảng dưới đây trình bày các tham số trong cấu hình mẫu của Bo
 | Tham số | Giá trị mẫu | Ý nghĩa |
 |---|---:|---|
 | `discovery_batch_size` | 20 | Số arXiv ID trong một batch Discovery |
-| `pipeline_max_inflight` | 4 | Số bài báo tối đa đang xử lý nhưng chưa hoàn tất |
+| `pipeline_max_inflight` | 5 | Số bài báo tối đa đang xử lý nhưng chưa hoàn tất |
 | `pipeline_extract_queue` | 2 | Kích thước tối đa của hàng đợi Extract |
 | `pipeline_references_queue` | 4 | Kích thước tối đa của hàng đợi References |
 | `pipeline_prefetch_remaining` | 5 | Ngưỡng số ID còn lại để chuẩn bị metadata cho batch kế tiếp |

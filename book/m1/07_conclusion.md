@@ -15,7 +15,7 @@ kernelspec:
 
 ## 7.1. Tổng kết Thành quả Milestone 1
 
-Trải qua quá trình nghiên cứu lý thuyết và triển khai kỹ thuật, nhóm đã hoàn thành toàn diện các mục tiêu đặt ra cho Milestone 1:
+Trải qua quá trình nghiên cứu lý thuyết và triển khai kỹ thuật, nhóm đã hoàn thành các mục tiêu đặt ra cho Milestone 1:
 
 - **Hạ tầng Pipeline hoàn chỉnh:** Xây dựng thành công quy trình thu thập dữ liệu tự động, khép kín từ khâu giải quyết mã định danh, tải mã nguồn mọi phiên bản, trích xuất chọn lọc tệp $\LaTeX$ đến thu thập trích dẫn học thuật có cấu trúc.
 - **Đa dạng hoá Chiến lược Thử nghiệm:** Hiện thực hoá các cấu hình cào dữ liệu đại diện (Baseline **B**, OAI-PMH **D1**, Kaggle **K**), song song với nghiên cứu mở rộng mô hình **Bounded Pipeline** đa luồng có kiểm soát tài nguyên.
@@ -27,7 +27,7 @@ Trải qua quá trình nghiên cứu lý thuyết và triển khai kỹ thuật,
 Trong quá trình thực nghiệm thực tế, nhóm đã nhận diện một số khó khăn và giới hạn kỹ thuật:
 
 1. **Rào cản Giới hạn Tần suất (Rate Limits):**
-   - Kho lưu trữ arXiv áp dụng quy tắc giãn cách tối thiểu 3.0 giây giữa hai yêu cầu liên tiếp. Điều này tạo ra nút thắt cổ chai lớn nhất về thời gian khi phải tải hàng chục nghìn phiên bản bài báo (thời gian chạy đơn luồng cho 5.000 bài có thể kéo dài từ 14 đến 20 giờ).
+   - Kho lưu trữ arXiv áp dụng quy tắc giãn cách tối thiểu 3.0 giây giữa hai yêu cầu liên tiếp. Điều này tạo ra nút thắt cổ chai lớn nhất về thời gian khi phải tải hàng chục nghìn phiên bản bài báo (thời gian chạy đơn luồng cho 5.000 bài có thể kéo dài nhiều giờ).
    - API của Semantic Scholar trên nhóm IP dùng chung (public pool) dễ gặp mã lỗi HTTP 429 khi mạng bận rộn, đòi hỏi phải có cơ chế retry-after và kiểm soát tốc độ chặt chẽ.
 2. **Sự biến đổi Định dạng Nguồn của arXiv:**
    - Khoảng 3% các bài nộp trên arXiv chỉ có tệp PDF đã biên dịch sẵn mà không cung cấp mã nguồn $\LaTeX$ nguyên bản, đòi hỏi pipeline phải xử lý linh hoạt trạng thái `empty` (`NO_TEX_SOURCE`) thay vì xem là lỗi thu thập.

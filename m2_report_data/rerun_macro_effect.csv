@@ -1,0 +1,16 @@
+arxiv_id,status_before,status_after,elements_before,elements_after,bibtex_before,bibtex_after
+2507.01755,success,success,1133,1133,50,51
+2507.02098,success,success,976,978,93,96
+2507.02169,success,success,1443,1480,0,819
+2507.02628,success,success,578,606,121,121
+2507.02653,success,success,600,600,0,78
+2507.03756,success,success,67,1124,0,112
+2507.04590,success,success,24,444,0,85
+2507.04647,success,success,688,695,126,129
+2507.04872,success,success,1094,1731,151,152
+2507.05311,success,success,586,710,136,140
+2507.05403,success,success,45,312,0,0
+2507.06032,success,success,22,739,0,48
+2507.06075,success,success,12,508,0,38
+2507.06467,success,success,625,625,0,35
+2507.06515,success,success,47,767,0,180

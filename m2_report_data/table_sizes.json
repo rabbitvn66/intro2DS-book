@@ -1,0 +1,18 @@
+{
+ "bibtex.parquet": {
+  "rows": 1388479,
+  "mb": 153.1
+ },
+ "elements.parquet": {
+  "rows": 2875825,
+  "mb": 295.8
+ },
+ "hierarchy.parquet": {
+  "rows": 4289537,
+  "mb": 31.4
+ },
+ "hierarchy_internal.parquet": {
+  "rows": 4289537,
+  "mb": 47.5
+ }
+}
